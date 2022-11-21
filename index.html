@@ -231,7 +231,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2022-11-21 09:51:41" itemprop="dateModified" datetime="2022-11-21T09:51:41+08:00">2022-11-21</time>
+      <time title="修改时间：2022-11-21 12:29:09" itemprop="dateModified" datetime="2022-11-21T12:29:09+08:00">2022-11-21</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -250,7 +250,7 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>984</span>
+      <span>987</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
@@ -275,11 +275,11 @@
 <h3 id="开始搭建"><a href="#开始搭建" class="headerlink" title="开始搭建"></a>开始搭建</h3><h4 id="安装Hexo"><a href="#安装Hexo" class="headerlink" title="安装Hexo"></a>安装Hexo</h4><p>使用npm全局安装Hexo(熟悉Node使用也可局部安装)</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br></pre></td></tr></table></figure>
 <p>安装完成后，可以使用<code>hexo -v</code>来查看是否安装成功，如果安装成功，终端输出如下：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221120215351.png" alt="20221120215351"></p>
-<h4 id="开始搭建-1"><a href="#开始搭建-1" class="headerlink" title="开始搭建"></a>开始搭建</h4><p>现在本地创建一个文件夹，用来存放博客相关的文件。(博客的内容文件也会存放在这个文件夹中)<br>然后切换至这个文件夹中，之后所有的操作都是在这个文件夹中进行的。<br>初始化博客（之前我在Ubuntu上初始化的博客，使用了<code>sudo hexo init</code>，导致之后的所有操作都需要使用sudo才能完成，最后部署的也有问题，不知道具体是什么原因，所以推荐第一步不使用sudo命令）</p>
+<h4 id="开始搭建-1"><a href="#开始搭建-1" class="headerlink" title="开始搭建"></a>开始搭建</h4><p>先在本地创建一个文件夹，用来存放博客相关的文件。(博客的内容文件也会存放在这个文件夹中)<br>然后切换至这个文件夹中，之后所有的操作都是在这个文件夹中进行的。<br>初始化博客（之前我在Ubuntu上初始化的博客，使用了<code>sudo hexo init</code>，导致之后的所有操作都需要使用sudo才能完成，最后部署的也有问题，不知道具体是什么原因，所以推荐第一步不使用sudo命令）</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
 <p>初始化的过程可能有一点点慢，耐心等一等就好了，因为需要从GitHub上clone文件。<br>安装成功后的提示如下：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001307.png" alt="20221121001307"><br>初始化后的目录结构如下<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001024.png" alt="20221121001024"><br>此时已经可以在本地将这个项目启动起来了，执行<code>hexo s</code>就可以在本地的4000端口看到初始的样子了。<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001625.png" alt="20221121001625"><br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001710.png" alt="20221121001710"></p>
 <h4 id="创建第一篇博客"><a href="#创建第一篇博客" class="headerlink" title="创建第一篇博客"></a>创建第一篇博客</h4><p>使用<code>hexo n &quot;博客标题&quot;</code>命令可以创建一篇新的博客，博客的路径为<code>/source/_post/</code><br>写完一篇博客之后，可以使用<code>hexo s</code>在本地启动项目，可以预览网站的样式。</p>
-<h4 id="部署GitHub"><a href="#部署GitHub" class="headerlink" title="部署GitHub"></a>部署GitHub</h4><p>要想网站能够通过域名来访问，可以将网站挂载在GitHub下（无需服务器，这是静态网站的一个优点）。下面介绍一下部署在GitHub的方式（至于为什么不是Gitee,因为gitee要开通这个功能还需要实名认证，要审核一天，所以搭建本站的时候就没使用gitee）<br>1.首先要登录GitHub创建一个<code>username.github.io</code>的仓库，注意username是自己GitHub的用户名，命名格式必须是这样，不然后面会出问题，选择仓库为公开。创建过程如图（因为已经创建过了，所以会有一个报错，忽略就行）：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121092955.png" alt="20221121092955"><br>创建完之后的界面如下：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121093331.png" alt="20221121093331"><br>如果配置过ssh可以选择ssh地址，没配置过选择https就行，保存这个地址。<br>回到博客的目录下，安装<strong>hexo-deployer-git</strong>:</p>
+<h4 id="部署GitHub"><a href="#部署GitHub" class="headerlink" title="部署GitHub"></a>部署GitHub</h4><p>要想网站能够通过域名来访问，可以将网站挂载在GitHub下（无需服务器，这是静态网站的一个优点）。下面介绍一下部署在GitHub的方式（至于为什么不是Gitee,因为gitee要开通这个功能还需要实名认证，要审核一天，所以搭建本站的时候就没使用gitee）<br>1.首先要登录GitHub创建一个名字为<code>username.github.io</code>的仓库，注意username是自己GitHub的用户名，命名格式必须是这样，不然后面会出问题，选择仓库为公开。创建过程如图（因为已经创建过了，所以会有一个报错，忽略就行）：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121092955.png" alt="20221121092955"><br>创建完之后的界面如下：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121093331.png" alt="20221121093331"><br>如果配置过ssh可以选择ssh地址，没配置过选择https就行，保存这个地址。<br>回到博客的目录下，安装<strong>hexo-deployer-git</strong>:</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
 <p>然后打开当前目录下的<code>_config.yml</code>文件,在文件末尾的deploy部分加上如下信息<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121094338.png" alt="20221121094338"><br>type为部署方式；<br>repo为仓库地址，上文中要保存下来的那个；<br>branch为分支名，一般填main&#x2F;master就行。<br><strong>注意type前面有两个空格，冒号后有一个空格，都不能少</strong><br>修改完<code>_config.yml</code>保存后执行一下命令：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean  <span class="comment">#清除缓存</span></span><br><span class="line">hexo g      <span class="comment">#生成静态网页</span></span><br><span class="line">hexo d      <span class="comment">#部署到远端，这个过程如果是用的https地址会需要输入用户名和密码</span></span><br></pre></td></tr></table></figure>
