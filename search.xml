@@ -4,6 +4,7 @@
     <title>Hexo博客搭建过程</title>
     <url>/2022/11/18/Hexo%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%BF%87%E7%A8%8B/</url>
     <content><![CDATA[<h1 id="Hexo博客搭建过程（以及踩过的坑）"><a href="#Hexo博客搭建过程（以及踩过的坑）" class="headerlink" title="Hexo博客搭建过程（以及踩过的坑）"></a>Hexo博客搭建过程（以及踩过的坑）</h1><h2 id="Hexo简单介绍"><a href="#Hexo简单介绍" class="headerlink" title="Hexo简单介绍"></a>Hexo简单介绍</h2><p><a href="https://hexo.io/zh-cn/index.html">Hexo</a>是一个简介快速的博客框架，使用Markdown解析文章，可以直接生成静态网页，通过部署在GitHub或者Gitee上可以实现无服务器搭建个人博客（缺点是搭建之后博客的网站的部署还是比较折腾，而且跨端使用的体验不是很好）。</p>
+<span id="more"></span>
 <h2 id="搭建过程"><a href="#搭建过程" class="headerlink" title="搭建过程"></a>搭建过程</h2><h3 id="前置条件"><a href="#前置条件" class="headerlink" title="前置条件"></a>前置条件</h3><p>部署Hexo之前要保证已经配置好了<a href="https://git-scm.com/">Git</a>和<a href="https://nodejs.org/en/">Node.js</a>(官网推荐:Node.js 版本需不低于 10.13，建议使用 Node.js 12.0 及以上版本)<br>查看Git和Node.js是否安装好的命令如下：</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">git --version   <span class="comment">#查看git版本命令</span></span><br><span class="line">node -v         <span class="comment">#查看node版本命令</span></span><br></pre></td></tr></table></figure>
 <p>若显示结果如下，说明已经安装配置完毕。<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221120213600.png" alt="20221120213600"></p>
@@ -32,6 +33,7 @@
     <title>Hello World</title>
     <url>/2022/11/16/hello-world/</url>
     <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+<span id="more"></span>
 <h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
 
 <p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
