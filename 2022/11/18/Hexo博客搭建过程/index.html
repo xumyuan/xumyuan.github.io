@@ -19,19 +19,29 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Pisces","darkmode":false,"version":"8.13.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="测试我是正文">
+    <meta name="description" content="Hexo博客搭建过程（以及踩过的坑）Hexo简单介绍Hexo是一个简介快速的博客框架，使用Markdown解析文章，可以直接生成静态网页，通过部署在GitHub或者Gitee上可以实现无服务器搭建个人博客（缺点是搭建之后博客的网站的部署还是比较折腾，而且跨端使用的体验不是很好）。 搭建过程前置条件部署Hexo之前要保证已经配置好了Git和Node.js(官网推荐:Node.js 版本需不低于 10">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hexo博客搭建过程">
 <meta property="og:url" content="http://example.com/2022/11/18/Hexo%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%BF%87%E7%A8%8B/index.html">
 <meta property="og:site_name" content="Xumy">
-<meta property="og:description" content="测试我是正文">
+<meta property="og:description" content="Hexo博客搭建过程（以及踩过的坑）Hexo简单介绍Hexo是一个简介快速的博客框架，使用Markdown解析文章，可以直接生成静态网页，通过部署在GitHub或者Gitee上可以实现无服务器搭建个人博客（缺点是搭建之后博客的网站的部署还是比较折腾，而且跨端使用的体验不是很好）。 搭建过程前置条件部署Hexo之前要保证已经配置好了Git和Node.js(官网推荐:Node.js 版本需不低于 10">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221120213600.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221120215351.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001307.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001024.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001625.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001710.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121092955.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121093331.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121094338.png">
 <meta property="article:published_time" content="2022-11-18T15:32:10.000Z">
-<meta property="article:modified_time" content="2022-11-18T16:29:27.350Z">
+<meta property="article:modified_time" content="2022-11-21T01:51:41.164Z">
 <meta property="article:author" content="XuMingyuan">
 <meta property="article:tag" content="hexo">
 <meta property="article:tag" content="服务器">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221120213600.png">
 
 
 <link rel="canonical" href="http://example.com/2022/11/18/Hexo%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%BF%87%E7%A8%8B/">
@@ -142,7 +152,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">1.</span> <span class="nav-text">测试</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Hexo%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%BF%87%E7%A8%8B%EF%BC%88%E4%BB%A5%E5%8F%8A%E8%B8%A9%E8%BF%87%E7%9A%84%E5%9D%91%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">Hexo博客搭建过程（以及踩过的坑）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Hexo%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.1.</span> <span class="nav-text">Hexo简单介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E8%BF%87%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">搭建过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E7%BD%AE%E6%9D%A1%E4%BB%B6"><span class="nav-number">1.2.1.</span> <span class="nav-text">前置条件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B%E6%90%AD%E5%BB%BA"><span class="nav-number">1.2.2.</span> <span class="nav-text">开始搭建</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E8%A3%85Hexo"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">安装Hexo</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B%E6%90%AD%E5%BB%BA-1"><span class="nav-number">1.2.2.2.</span> <span class="nav-text">开始搭建</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E7%AC%AC%E4%B8%80%E7%AF%87%E5%8D%9A%E5%AE%A2"><span class="nav-number">1.2.2.3.</span> <span class="nav-text">创建第一篇博客</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2GitHub"><span class="nav-number">1.2.2.4.</span> <span class="nav-text">部署GitHub</span></a></li></ol></li></ol></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -239,7 +249,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2022-11-19 00:29:27" itemprop="dateModified" datetime="2022-11-19T00:29:27+08:00">2022-11-19</time>
+      <time title="修改时间：2022-11-21 09:51:41" itemprop="dateModified" datetime="2022-11-21T09:51:41+08:00">2022-11-21</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -265,14 +275,14 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>6</span>
+      <span>984</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
         <i class="far fa-clock"></i>
       </span>
       <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>1 分钟</span>
+      <span>3 分钟</span>
     </span>
 </div>
 
@@ -283,7 +293,22 @@
     
     
     <div class="post-body" itemprop="articleBody">
-        <h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><p>我是正文</p>
+        <h1 id="Hexo博客搭建过程（以及踩过的坑）"><a href="#Hexo博客搭建过程（以及踩过的坑）" class="headerlink" title="Hexo博客搭建过程（以及踩过的坑）"></a>Hexo博客搭建过程（以及踩过的坑）</h1><h2 id="Hexo简单介绍"><a href="#Hexo简单介绍" class="headerlink" title="Hexo简单介绍"></a>Hexo简单介绍</h2><p><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/index.html">Hexo</a>是一个简介快速的博客框架，使用Markdown解析文章，可以直接生成静态网页，通过部署在GitHub或者Gitee上可以实现无服务器搭建个人博客（缺点是搭建之后博客的网站的部署还是比较折腾，而且跨端使用的体验不是很好）。</p>
+<h2 id="搭建过程"><a href="#搭建过程" class="headerlink" title="搭建过程"></a>搭建过程</h2><h3 id="前置条件"><a href="#前置条件" class="headerlink" title="前置条件"></a>前置条件</h3><p>部署Hexo之前要保证已经配置好了<a target="_blank" rel="noopener" href="https://git-scm.com/">Git</a>和<a target="_blank" rel="noopener" href="https://nodejs.org/en/">Node.js</a>(官网推荐:Node.js 版本需不低于 10.13，建议使用 Node.js 12.0 及以上版本)<br>查看Git和Node.js是否安装好的命令如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git --version   <span class="comment">#查看git版本命令</span></span><br><span class="line">node -v         <span class="comment">#查看node版本命令</span></span><br></pre></td></tr></table></figure>
+<p>若显示结果如下，说明已经安装配置完毕。<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221120213600.png" alt="20221120213600"></p>
+<h3 id="开始搭建"><a href="#开始搭建" class="headerlink" title="开始搭建"></a>开始搭建</h3><h4 id="安装Hexo"><a href="#安装Hexo" class="headerlink" title="安装Hexo"></a>安装Hexo</h4><p>使用npm全局安装Hexo(熟悉Node使用也可局部安装)</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br></pre></td></tr></table></figure>
+<p>安装完成后，可以使用<code>hexo -v</code>来查看是否安装成功，如果安装成功，终端输出如下：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221120215351.png" alt="20221120215351"></p>
+<h4 id="开始搭建-1"><a href="#开始搭建-1" class="headerlink" title="开始搭建"></a>开始搭建</h4><p>现在本地创建一个文件夹，用来存放博客相关的文件。(博客的内容文件也会存放在这个文件夹中)<br>然后切换至这个文件夹中，之后所有的操作都是在这个文件夹中进行的。<br>初始化博客（之前我在Ubuntu上初始化的博客，使用了<code>sudo hexo init</code>，导致之后的所有操作都需要使用sudo才能完成，最后部署的也有问题，不知道具体是什么原因，所以推荐第一步不使用sudo命令）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
+<p>初始化的过程可能有一点点慢，耐心等一等就好了，因为需要从GitHub上clone文件。<br>安装成功后的提示如下：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001307.png" alt="20221121001307"><br>初始化后的目录结构如下<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001024.png" alt="20221121001024"><br>此时已经可以在本地将这个项目启动起来了，执行<code>hexo s</code>就可以在本地的4000端口看到初始的样子了。<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001625.png" alt="20221121001625"><br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121001710.png" alt="20221121001710"></p>
+<h4 id="创建第一篇博客"><a href="#创建第一篇博客" class="headerlink" title="创建第一篇博客"></a>创建第一篇博客</h4><p>使用<code>hexo n &quot;博客标题&quot;</code>命令可以创建一篇新的博客，博客的路径为<code>/source/_post/</code><br>写完一篇博客之后，可以使用<code>hexo s</code>在本地启动项目，可以预览网站的样式。</p>
+<h4 id="部署GitHub"><a href="#部署GitHub" class="headerlink" title="部署GitHub"></a>部署GitHub</h4><p>要想网站能够通过域名来访问，可以将网站挂载在GitHub下（无需服务器，这是静态网站的一个优点）。下面介绍一下部署在GitHub的方式（至于为什么不是Gitee,因为gitee要开通这个功能还需要实名认证，要审核一天，所以搭建本站的时候就没使用gitee）<br>1.首先要登录GitHub创建一个<code>username.github.io</code>的仓库，注意username是自己GitHub的用户名，命名格式必须是这样，不然后面会出问题，选择仓库为公开。创建过程如图（因为已经创建过了，所以会有一个报错，忽略就行）：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121092955.png" alt="20221121092955"><br>创建完之后的界面如下：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121093331.png" alt="20221121093331"><br>如果配置过ssh可以选择ssh地址，没配置过选择https就行，保存这个地址。<br>回到博客的目录下，安装<strong>hexo-deployer-git</strong>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure>
+<p>然后打开当前目录下的<code>_config.yml</code>文件,在文件末尾的deploy部分加上如下信息<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221121094338.png" alt="20221121094338"><br>type为部署方式；<br>repo为仓库地址，上文中要保存下来的那个；<br>branch为分支名，一般填main&#x2F;master就行。<br><strong>注意type前面有两个空格，冒号后有一个空格，都不能少</strong><br>修改完<code>_config.yml</code>保存后执行一下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean  <span class="comment">#清除缓存</span></span><br><span class="line">hexo g      <span class="comment">#生成静态网页</span></span><br><span class="line">hexo d      <span class="comment">#部署到远端，这个过程如果是用的https地址会需要输入用户名和密码</span></span><br></pre></td></tr></table></figure>
+<p>执行完上述命令就可以通过<code>username.github.io</code>访问到博客网站了。</p>
 
     </div>
 
@@ -338,14 +363,14 @@
       <i class="fa fa-chart-line"></i>
     </span>
       <span>站点总字数：</span>
-    <span title="站点总字数">0k</span>
+    <span title="站点总字数">1k</span>
   </span>
   <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">1 分钟</span>
+    <span title="站点阅读时长">4 分钟</span>
   </span>
 </div>
 <div class="busuanzi-count">
