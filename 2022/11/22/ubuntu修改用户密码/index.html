@@ -19,23 +19,32 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Pisces","darkmode":false,"version":"8.13.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta property="og:type" content="website">
-<meta property="og:title" content="Xumy">
-<meta property="og:url" content="http://example.com/archives/index.html">
+    <meta name="description" content="Ubuntu修改用户密码事情的起因是最近看Games101图形学课程，课后作业给了一个配置好环境的虚拟机镜像，创建了一个用户并配置了用户密码。虽然不影响使用，但是没有root账户的密码总觉得有点不够自在，就找了一下修改root用户密码的方法，顺便修改当前账户的密码（因为密码确实有点长，有点容易打错）。  root用户密码修改使用ctrl+alt+t打开终端，输入 1sudo passwd 然后输入">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ubuntu修改用户密码">
+<meta property="og:url" content="http://example.com/2022/11/22/ubuntu%E4%BF%AE%E6%94%B9%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81/index.html">
 <meta property="og:site_name" content="Xumy">
+<meta property="og:description" content="Ubuntu修改用户密码事情的起因是最近看Games101图形学课程，课后作业给了一个配置好环境的虚拟机镜像，创建了一个用户并配置了用户密码。虽然不影响使用，但是没有root账户的密码总觉得有点不够自在，就找了一下修改root用户密码的方法，顺便修改当前账户的密码（因为密码确实有点长，有点容易打错）。  root用户密码修改使用ctrl+alt+t打开终端，输入 1sudo passwd 然后输入">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223234.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223330.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122224346.png">
+<meta property="article:published_time" content="2022-11-22T13:25:16.000Z">
+<meta property="article:modified_time" content="2022-11-22T14:52:51.734Z">
 <meta property="article:author" content="XuMingyuan">
+<meta property="article:tag" content="ubuntu">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223234.png">
 
 
-<link rel="canonical" href="http://example.com/archives/">
+<link rel="canonical" href="http://example.com/2022/11/22/ubuntu%E4%BF%AE%E6%94%B9%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81/">
 
 
 
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":false,"lang":"zh-CN","comments":"","permalink":"","path":"archives/index.html","title":""}</script>
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2022/11/22/ubuntu%E4%BF%AE%E6%94%B9%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81/","path":"2022/11/22/ubuntu修改用户密码/","title":"Ubuntu修改用户密码"}</script>
 
 <script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>归档 | Xumy</title>
+<title>Ubuntu修改用户密码 | Xumy</title>
   
 
 
@@ -70,7 +79,7 @@
 
     <a href="/" class="brand" rel="start">
       <i class="logo-line"></i>
-      <h1 class="site-title">Xumy</h1>
+      <p class="site-title">Xumy</p>
       <i class="logo-line"></i>
     </a>
   </div>
@@ -123,7 +132,7 @@
   
   <aside class="sidebar">
 
-    <div class="sidebar-inner sidebar-overview-active">
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
       <ul class="sidebar-nav">
         <li class="sidebar-nav-toc">
           文章目录
@@ -136,6 +145,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Ubuntu%E4%BF%AE%E6%94%B9%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81"><span class="nav-number">1.</span> <span class="nav-text">Ubuntu修改用户密码</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#root%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81%E4%BF%AE%E6%94%B9"><span class="nav-number">1.1.</span> <span class="nav-text">root用户密码修改</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E6%8C%87%E5%AE%9A%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81"><span class="nav-number">1.2.</span> <span class="nav-text">修改指定用户密码</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -185,89 +195,132 @@
 
     </div>
 
-    <div class="main-inner archive posts-collapse">
+    <div class="main-inner post posts-expand">
 
 
   
-  
-  
-  <div class="post-block">
-    <div class="post-content">
-      <div class="collection-title">
-        <span class="collection-header">嗯..! 目前共计 3 篇日志。 继续努力。</span>
-      </div>
 
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/11/22/ubuntu%E4%BF%AE%E6%94%B9%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/Avatar.jpg">
+      <meta itemprop="name" content="XuMingyuan">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Xumy">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Ubuntu修改用户密码 | Xumy">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ubuntu修改用户密码
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
       
-    <div class="collection-year">
-      <span class="collection-header">2022</span>
+
+      <time title="创建时间：2022-11-22 21:25:16 / 修改时间：22:52:51" itemprop="dateCreated datePublished" datetime="2022-11-22T21:25:16+08:00">2022-11-22</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">Linux学习</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>289</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>1 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="Ubuntu修改用户密码"><a href="#Ubuntu修改用户密码" class="headerlink" title="Ubuntu修改用户密码"></a>Ubuntu修改用户密码</h1><p>事情的起因是最近看Games101图形学课程，课后作业给了一个配置好环境的虚拟机镜像，创建了一个用户并配置了用户密码。虽然不影响使用，但是没有root账户的密码总觉得有点不够自在，就找了一下修改root用户密码的方法，顺便修改当前账户的密码（因为密码确实有点长，有点容易打错）。</p>
+<!---more--->
+<h2 id="root用户密码修改"><a href="#root用户密码修改" class="headerlink" title="root用户密码修改"></a>root用户密码修改</h2><p>使用<code>ctrl+alt+t</code>打开终端，输入</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo passwd</span><br></pre></td></tr></table></figure>
+<p>然后输入两次想要设置的密码，这样就成功更新密码了。<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223234.png" alt="20221122223234"><br>可以通过<code>su</code>命令测试是否修改成功<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223330.png" alt="20221122223330"><br>执行完命令后，成功切换为root用户说明修改成功。</p>
+<h2 id="修改指定用户密码"><a href="#修改指定用户密码" class="headerlink" title="修改指定用户密码"></a>修改指定用户密码</h2><p>接下来修改指定用户的密码。<br>在终端中输入</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo passwd username <span class="comment">#username为要修改密码的用户名</span></span><br></pre></td></tr></table></figure>
+<p>之后输入新的密码就完成密码的重置了。<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122224346.png" alt="20221122224346"><br>也可以使用<code>su</code>切换到root用户，然后执行</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">passwd username</span><br></pre></td></tr></table></figure>
+<p>效果是一样的。</p>
+
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-11-22T21:25:16+08:00"
-              content="2022-11-22">
-          11-22
-        </time>
-      </div>
+    
+    
+    
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/11/22/ubuntu%E4%BF%AE%E6%94%B9%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81/" itemprop="url">
-            <span itemprop="name">Ubuntu修改用户密码</span>
-          </a>
-      </div>
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/ubuntu/" rel="tag"># ubuntu</a>
+          </div>
 
-      
-    </header>
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/11/18/Hexo%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%BF%87%E7%A8%8B/" rel="prev" title="Hexo博客搭建过程">
+                  <i class="fa fa-chevron-left"></i> Hexo博客搭建过程
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
   </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-11-18T23:32:10+08:00"
-              content="2022-11-18">
-          11-18
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/11/18/Hexo%E5%8D%9A%E5%AE%A2%E6%90%AD%E5%BB%BA%E8%BF%87%E7%A8%8B/" itemprop="url">
-            <span itemprop="name">Hexo博客搭建过程</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-      <div class="post-meta-container">
-        <time itemprop="dateCreated"
-              datetime="2022-11-16T22:54:10+08:00"
-              content="2022-11-16">
-          11-16
-        </time>
-      </div>
-
-      <div class="post-title">
-          <a class="post-title-link" href="/2022/11/16/hello-world/" itemprop="url">
-            <span itemprop="name">Hello World</span>
-          </a>
-      </div>
-
-      
-    </header>
-  </article>
+</div>
 
 
-    </div>
-  </div>
-  
-  
-  
+
+
+
 
 </div>
   </main>
