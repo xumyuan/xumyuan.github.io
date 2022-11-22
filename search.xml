@@ -52,7 +52,7 @@
     <title>Ubuntu修改用户密码</title>
     <url>/2022/11/22/ubuntu%E4%BF%AE%E6%94%B9%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81/</url>
     <content><![CDATA[<h1 id="Ubuntu修改用户密码"><a href="#Ubuntu修改用户密码" class="headerlink" title="Ubuntu修改用户密码"></a>Ubuntu修改用户密码</h1><p>事情的起因是最近看Games101图形学课程，课后作业给了一个配置好环境的虚拟机镜像，创建了一个用户并配置了用户密码。虽然不影响使用，但是没有root账户的密码总觉得有点不够自在，就找了一下修改root用户密码的方法，顺便修改当前账户的密码（因为密码确实有点长，有点容易打错）。</p>
-<!---more--->
+<span id="more"></span>
 <h2 id="root用户密码修改"><a href="#root用户密码修改" class="headerlink" title="root用户密码修改"></a>root用户密码修改</h2><p>使用<code>ctrl+alt+t</code>打开终端，输入</p>
 <figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo passwd</span><br></pre></td></tr></table></figure>
 <p>然后输入两次想要设置的密码，这样就成功更新密码了。<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223234.png" alt="20221122223234"><br>可以通过<code>su</code>命令测试是否修改成功<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223330.png" alt="20221122223330"><br>执行完命令后，成功切换为root用户说明修改成功。</p>

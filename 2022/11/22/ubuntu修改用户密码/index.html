@@ -19,18 +19,18 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Pisces","darkmode":false,"version":"8.13.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="Ubuntu修改用户密码事情的起因是最近看Games101图形学课程，课后作业给了一个配置好环境的虚拟机镜像，创建了一个用户并配置了用户密码。虽然不影响使用，但是没有root账户的密码总觉得有点不够自在，就找了一下修改root用户密码的方法，顺便修改当前账户的密码（因为密码确实有点长，有点容易打错）。  root用户密码修改使用ctrl+alt+t打开终端，输入 1sudo passwd 然后输入">
+    <meta name="description" content="Ubuntu修改用户密码事情的起因是最近看Games101图形学课程，课后作业给了一个配置好环境的虚拟机镜像，创建了一个用户并配置了用户密码。虽然不影响使用，但是没有root账户的密码总觉得有点不够自在，就找了一下修改root用户密码的方法，顺便修改当前账户的密码（因为密码确实有点长，有点容易打错）。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Ubuntu修改用户密码">
 <meta property="og:url" content="http://example.com/2022/11/22/ubuntu%E4%BF%AE%E6%94%B9%E7%94%A8%E6%88%B7%E5%AF%86%E7%A0%81/index.html">
 <meta property="og:site_name" content="Xumy">
-<meta property="og:description" content="Ubuntu修改用户密码事情的起因是最近看Games101图形学课程，课后作业给了一个配置好环境的虚拟机镜像，创建了一个用户并配置了用户密码。虽然不影响使用，但是没有root账户的密码总觉得有点不够自在，就找了一下修改root用户密码的方法，顺便修改当前账户的密码（因为密码确实有点长，有点容易打错）。  root用户密码修改使用ctrl+alt+t打开终端，输入 1sudo passwd 然后输入">
+<meta property="og:description" content="Ubuntu修改用户密码事情的起因是最近看Games101图形学课程，课后作业给了一个配置好环境的虚拟机镜像，创建了一个用户并配置了用户密码。虽然不影响使用，但是没有root账户的密码总觉得有点不够自在，就找了一下修改root用户密码的方法，顺便修改当前账户的密码（因为密码确实有点长，有点容易打错）。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223234.png">
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223330.png">
 <meta property="og:image" content="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122224346.png">
 <meta property="article:published_time" content="2022-11-22T13:25:16.000Z">
-<meta property="article:modified_time" content="2022-11-22T14:52:51.734Z">
+<meta property="article:modified_time" content="2022-11-22T15:18:58.066Z">
 <meta property="article:author" content="XuMingyuan">
 <meta property="article:tag" content="ubuntu">
 <meta name="twitter:card" content="summary">
@@ -236,7 +236,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2022-11-22 21:25:16 / 修改时间：22:52:51" itemprop="dateCreated datePublished" datetime="2022-11-22T21:25:16+08:00">2022-11-22</time>
+      <time title="创建时间：2022-11-22 21:25:16 / 修改时间：23:18:58" itemprop="dateCreated datePublished" datetime="2022-11-22T21:25:16+08:00">2022-11-22</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -281,7 +281,7 @@
     
     <div class="post-body" itemprop="articleBody">
         <h1 id="Ubuntu修改用户密码"><a href="#Ubuntu修改用户密码" class="headerlink" title="Ubuntu修改用户密码"></a>Ubuntu修改用户密码</h1><p>事情的起因是最近看Games101图形学课程，课后作业给了一个配置好环境的虚拟机镜像，创建了一个用户并配置了用户密码。虽然不影响使用，但是没有root账户的密码总觉得有点不够自在，就找了一下修改root用户密码的方法，顺便修改当前账户的密码（因为密码确实有点长，有点容易打错）。</p>
-<!---more--->
+<span id="more"></span>
 <h2 id="root用户密码修改"><a href="#root用户密码修改" class="headerlink" title="root用户密码修改"></a>root用户密码修改</h2><p>使用<code>ctrl+alt+t</code>打开终端，输入</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo passwd</span><br></pre></td></tr></table></figure>
 <p>然后输入两次想要设置的密码，这样就成功更新密码了。<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223234.png" alt="20221122223234"><br>可以通过<code>su</code>命令测试是否修改成功<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221122223330.png" alt="20221122223330"><br>执行完命令后，成功切换为root用户说明修改成功。</p>
