@@ -30,6 +30,31 @@
       </tags>
   </entry>
   <entry>
+    <title>MouseWithoutBorders无界鼠标使用</title>
+    <url>/2022/11/26/MouseWithoutBorders%E6%97%A0%E7%95%8C%E9%BC%A0%E6%A0%87%E4%BD%BF%E7%94%A8/</url>
+    <content><![CDATA[<h1 id="MouseWithoutBorders无界鼠标使用"><a href="#MouseWithoutBorders无界鼠标使用" class="headerlink" title="MouseWithoutBorders无界鼠标使用"></a>MouseWithoutBorders无界鼠标使用</h1><p>因为现在手头上有一台笔记本和一台台式机。台式机是新配的，性能自然是比笔记本强上不少，导致笔记本一直是在吃灰的一个状态，但是又有一些文件都在笔记本上，要在两台电脑上切来切去，操作手感十分的割裂（还新买了一套键鼠，但是依旧很不方便）。有时候要查看一台电脑上的文件信息，然后在另一台电脑上操作，切换过程实在是太过繁琐了。然后无意间看到了微软的无界鼠标这款软件，发现恰好能满足自己的大部分需求，使用体验也非常不错。</p>
+<span id="more"></span>
+<h2 id="软件安装"><a href="#软件安装" class="headerlink" title="软件安装"></a>软件安装</h2><p>软件的下载连接<a href="https://www.microsoft.com/en-us/download/details.aspx?id=35460">点击这里</a>。<br>进入官网后，直接点击Download下载。<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221126163733.png" alt="20221126163733"><br>下载后一路next就能安装完毕了。<br>安装完毕后的软件界面如下（没有中文版本，差评）：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221126163528.png" alt="20221126163528"><br>需要在两台设备上都安装这个软件。</p>
+<h2 id="软件配置"><a href="#软件配置" class="headerlink" title="软件配置"></a>软件配置</h2><p>软件的起始界面中有<strong>yes</strong>和<strong>no</strong>l两个选项。</p>
+<ul>
+<li><strong>yes</strong>：控制端选择yes，也就是需要共享键盘鼠标的一端</li>
+<li><strong>no</strong>：被控制端选择no,最多应该是可以同时连接四台设备<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221126164245.png" alt="20221126164245"></li>
+</ul>
+<h3 id="控制端配置"><a href="#控制端配置" class="headerlink" title="控制端配置"></a>控制端配置</h3><p>控制端选择<strong>yes</strong>之后，会出现以下界面：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221126164356.png" alt="20221126164356"><br>有两个输入框，上面为被控制设备的安全码，下面为被控制端的名字。<br>名字的查看方式如下（也可以选择no查看设备名字）：<br><strong>Win10</strong>查看方式：设置→系统→关于<br>设备名称显示的就是设备的名字<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221126170535.png" alt="20221126170535"><br><strong>Win11</strong>查看方式：设置→系统→系统信息<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221126170659.png" alt="20221126170659"><br>而安全码则是在被控制端选择no之后会显示。</p>
+<h3 id="被控制端配置"><a href="#被控制端配置" class="headerlink" title="被控制端配置"></a>被控制端配置</h3><p>被控制端选择<strong>no</strong>之后，会出现以下界面：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221126165444.png" alt="20221126165444"><br>上面为本机的安全码，下面是本机名字。</p>
+<h3 id="连接"><a href="#连接" class="headerlink" title="连接"></a>连接</h3><p>使用控制端设备输入被控制设备的安全码和名字之后点击link之后就可以完成连接了。<br>直接点击连接可能会由于防火墙的问题,连接失败。搜了一圈也没找到答案，目前测试有效的一个方法是关闭电脑<strong>公用网络</strong>的防火墙，之后就可以正常使用了（还不太清楚有没有什么安全隐患）。<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221126172713.png" alt="20221126172713"></p>
+<h2 id="软件使用"><a href="#软件使用" class="headerlink" title="软件使用"></a>软件使用</h2><p>成功连接后，点击<strong>next</strong>之后点击<strong>done</strong>可以看到如下界面：<br><img src="https://cdn.jsdelivr.net/gh/xumyuan/image@master/blogs/pictures20221126172855.png" alt="20221126172855"><br><strong>Two Row</strong>可以改变设备的布局，变成2×2的样式。也可以通过拖动电脑图标，改变他们的逻辑位置，和物理位置对应起来比较方便。（通俗的说就是，实际电脑1放在电脑2的左边，可以在改界面拖动电脑2放在电脑右边，这样操作起来比较顺手）<br>拖动之后点击<code>Apply</code>就可以了。</p>
+<h2 id="功能简介"><a href="#功能简介" class="headerlink" title="功能简介"></a>功能简介</h2><p>除了可以在多台设备共享一套键鼠之外，还可以共享剪切板的内容以及在设备间传输文件（貌似只支持单个100M以下的文件）。其他功能和配置还在摸索中…</p>
+]]></content>
+      <categories>
+        <category>实用工具</category>
+      </categories>
+      <tags>
+        <tag>实用工具</tag>
+        <tag>多端协同</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Hello World</title>
     <url>/2022/11/16/hello-world/</url>
     <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
