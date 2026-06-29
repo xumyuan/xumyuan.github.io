@@ -1,0 +1,13 @@
+import{_ as s,o as n,c as e,a2 as p}from"./chunks/framework.BWuWLRhz.js";const u=JSON.parse('{"title":"如何确定Mip Level","description":"","frontmatter":{},"headers":[],"relativePath":"图形学/图形学基础.md","filePath":"图形学/图形学基础.md","lastUpdated":null}'),t={name:"图形学/图形学基础.md"};function l(i,a,d,o,c,r){return n(),e("div",null,[...a[0]||(a[0]=[p(`<title>基础</title><h1 id="如何确定mip-level" tabindex="-1">如何确定Mip Level <a class="header-anchor" href="#如何确定mip-level" aria-label="Permalink to &quot;如何确定Mip Level&quot;">​</a></h1><h2 id="gpu是如何判断出来此时纹理在屏幕上比例更小" tabindex="-1">GPU是如何判断出来此时纹理在屏幕上比例更小 <a class="header-anchor" href="#gpu是如何判断出来此时纹理在屏幕上比例更小" aria-label="Permalink to &quot;GPU是如何判断出来此时纹理在屏幕上比例更小&quot;">​</a></h2><p>两个相关api：</p><div class="language-OpenGL vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">OpenGL</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ddx(float2(coord2))</span></span>
+<span class="line"><span>ddy(float2(coord2))</span></span></code></pre></div><p>ddx、ddy的作用是分别计算屏幕空间中x轴向和y轴向的给定值的偏导。</p><p>在光栅化的时候，GPU会在同一时刻并行运行很多PS,但是并不是一个一个pixel去执行的，而是组织在一个2x2的一组分块中执行的。</p><p>偏导数就是计算这一块像素的变化率。</p><p><img src="https://raw.githubusercontent.com/xumyuan/image/master/img/%E5%9B%BE%E5%BD%A2_%E5%9F%BA%E7%A1%80_1.png" alt=""></p><p>如果使用模型的UV作为参数，使用ddx和ddy对其求偏导，就可以得到在纹理空间下，相邻屏幕像素的UV差值，差值越大，说明采样的纹理在屏幕上占比越小，对应要用的mip level就应该更大。</p><p>实际采样函数的大致逻辑如下：</p><div class="language-OpenGL vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">OpenGL</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>tex2D(sampler2D tex, float2 uv)</span></span>
+<span class="line"><span>{</span></span>
+<span class="line"><span>    float dx=ddx(uv);</span></span>
+<span class="line"><span>    float dy=ddy(uv);</span></span>
+<span class="line"><span>    // texSize.xy为纹理tex的纹素大小</span></span>
+<span class="line"><span>    // texSize.xy=1.0/float2(texWidth,texHeight)</span></span>
+<span class="line"><span>    float px = texSize.x * dx;</span></span>
+<span class="line"><span>    float py = texSize.y * dy;</span></span>
+<span class="line"><span>    float lod = 0.5 * log2(max(dot(px, px), dot(py, py)));</span></span>
+<span class="line"><span>    uv.w= lod;</span></span>
+<span class="line"><span>    return tex2Dlod(tex, uv);</span></span>
+<span class="line"><span>}</span></span></code></pre></div><blockquote><p>除此之外，ddx、ddy还可以在对世界空间下的坐标求偏导，可以用来计算表面法线；对渲染结果颜色求偏导，进行勾边强化。</p></blockquote>`,13)])])}const h=s(t,[["render",l]]);export{u as __pageData,h as default};
