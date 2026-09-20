@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Billboard 朝向对比</title>
+  <style>
+    :root {
+      --demo-text: var(--vp-c-text-1, #e5e1d8);
+      --demo-muted: var(--vp-c-text-2, #a8a399);
+      --demo-line: var(--vp-c-divider, #3f3c34);
+      --demo-panel: var(--vp-c-bg-elv, rgba(38, 38, 36, 0.92));
+      --demo-soft: var(--vp-c-brand-soft, #3a2e28);
+      --demo-brand: var(--vp-c-brand-1, #e08d6e);
+      --demo-font: var(--vp-font-family-base, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif);
+      --fixed: #ef6b6b;
+      --sprite: #7dd3a8;
+      --spherical: #6ec6ff;
+      --cylindrical: #f0c14b;
+      --gpu: #c084fc;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #0d0f14;
+      color: var(--demo-text);
+      font-family: var(--demo-font);
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #0d0f14;
+    }
+
+    #view {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: calc(100% - 32px);
+    }
+
+    .chip, button {
+      border: 1px solid var(--demo-line);
+      background: var(--demo-panel);
+      color: var(--demo-text);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font: 12px/1.4 var(--demo-font);
+    }
+
+    button { cursor: pointer; }
+    button.active {
+      border-color: var(--demo-brand);
+      color: var(--demo-brand);
+      background: var(--demo-soft);
+    }
+
+    .legend {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      display: grid;
+      gap: 6px;
+      max-width: min(420px, calc(100% - 32px));
+      padding: 12px 14px;
+      background: var(--demo-panel);
+      border: 1px solid var(--demo-line);
+      border-radius: 8px;
+      color: var(--demo-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <section class="stage">
+    <canvas id="view"></canvas>
+    <div class="hud">
+      <button id="autoRotate" class="active">自动绕转</button>
+      <button id="lockY">锁定俯仰</button>
+      <span class="chip">拖拽旋转 · 滚轮缩放</span>
+    </div>
+    <div class="legend">
+      <div><span class="swatch" style="background:var(--fixed)"></span>普通 Quad：不朝向相机，侧看会变一条线</div>
+      <div><span class="swatch" style="background:var(--sprite)"></span>Sprite：Three.js 内置 Billboard</div>
+      <div><span class="swatch" style="background:var(--spherical)"></span>Spherical：每帧复制相机旋转</div>
+      <div><span class="swatch" style="background:var(--cylindrical)"></span>Cylindrical：只绕 Y 转，像树和血条</div>
+      <div><span class="swatch" style="background:var(--gpu)"></span>GPU Expand：视空间扩四边形，粒子常用</div>
+    </div>
+  </section>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const THEME_KEYS = [
+      '--vp-c-bg',
+      '--vp-c-bg-alt',
+      '--vp-c-bg-soft',
+      '--vp-c-bg-elv',
+      '--vp-c-text-1',
+      '--vp-c-text-2',
+      '--vp-c-text-3',
+      '--vp-c-divider',
+      '--vp-c-border',
+      '--vp-c-brand-1',
+      '--vp-c-brand-soft',
+      '--vp-font-family-base',
+      '--vp-font-family-mono',
+    ];
+
+    function syncThemeFromParent() {
+      if (window.parent === window) return;
+      try {
+        const root = window.parent.document.documentElement;
+        const styles = window.parent.getComputedStyle(root);
+        for (const key of THEME_KEYS) {
+          const value = styles.getPropertyValue(key);
+          if (value) document.documentElement.style.setProperty(key, value);
+        }
+        document.documentElement.classList.toggle('dark', root.classList.contains('dark'));
+      } catch {
+        // 跨域 iframe 读不到父页，保持 fallback
+      }
+    }
+
+    syncThemeFromParent();
+    if (window.parent !== window) {
+      try {
+        new MutationObserver(syncThemeFromParent).observe(
+          window.parent.document.documentElement,
+          { attributes: true, attributeFilter: ['class'] }
+        );
+      } catch {
+        // ignore
+      }
+    }
+
+    const canvas = document.getElementById("view");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x0d0f14, 1);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x0d0f14, 18, 42);
+
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 80);
+    camera.position.set(7.5, 4.2, 11);
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.7;
+    controls.target.set(0, 1.4, 0);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const key = new THREE.DirectionalLight(0xffffff, 1.1);
+    key.position.set(6, 10, 4);
+    scene.add(key);
+
+    const grid = new THREE.GridHelper(24, 24, 0x394057, 0x232838);
+    scene.add(grid);
+
+    const ground = new THREE.Mesh(
+      new THREE.CircleGeometry(14, 48),
+      new THREE.MeshStandardMaterial({ color: 0x171a22, roughness: 1 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.01;
+    scene.add(ground);
+
+    function makeFaceMaterial(color) {
+      return new THREE.MeshStandardMaterial({
+        color,
+        emissive: color,
+        emissiveIntensity: 0.18,
+        roughness: 0.45,
+        metalness: 0.05,
+        side: THREE.DoubleSide,
+      });
+    }
+
+    function makeLabel(text, color) {
+      const c = document.createElement("canvas");
+      c.width = 512;
+      c.height = 128;
+      const ctx = c.getContext("2d");
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.fillStyle = "rgba(10,12,16,0.72)";
+      ctx.fillRect(16, 24, 480, 80);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(16, 24, 480, 80);
+      ctx.fillStyle = "#f4f1ec";
+      ctx.font = "600 36px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, 256, 64);
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true })
+      );
+      sprite.scale.set(2.4, 0.6, 1);
+      return sprite;
+    }
+
+    function makePole(x) {
+      const group = new THREE.Group();
+      group.position.set(x, 0, 0);
+      const pole = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.08, 1.6, 10),
+        new THREE.MeshStandardMaterial({ color: 0x8b8f9a })
+      );
+      pole.position.y = 0.8;
+      const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.28, 0.28, 0.08, 16),
+        new THREE.MeshStandardMaterial({ color: 0x2a2f3c })
+      );
+      base.position.y = 0.04;
+      group.add(pole, base);
+      return group;
+    }
+
+    function makeQuad(color) {
+      return new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), makeFaceMaterial(color));
+    }
+
+    const items = [];
+
+    const fixed = makePole(-6);
+    const fixedQuad = makeQuad(0xef6b6b);
+    fixedQuad.position.set(0, 2.15, 0);
+    const fixedLabel = makeLabel("普通 Quad", "#ef6b6b");
+    fixedLabel.position.set(0, 3.2, 0);
+    fixed.add(fixedQuad, fixedLabel);
+    scene.add(fixed);
+    items.push({ kind: "fixed", root: fixed, face: fixedQuad });
+
+    const spritePole = makePole(-3);
+    const spriteCanvas = document.createElement("canvas");
+    spriteCanvas.width = 256;
+    spriteCanvas.height = 256;
+    const sctx = spriteCanvas.getContext("2d");
+    sctx.fillStyle = "#7dd3a8";
+    sctx.fillRect(0, 0, 256, 256);
+    sctx.fillStyle = "#0d1a14";
+    sctx.font = "700 42px sans-serif";
+    sctx.textAlign = "center";
+    sctx.textBaseline = "middle";
+    sctx.fillText("SPRITE", 128, 128);
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(spriteCanvas) })
+    );
+    sprite.position.set(0, 2.15, 0);
+    sprite.scale.set(1.5, 1.5, 1);
+    const spriteLabel = makeLabel("Three.js Sprite", "#7dd3a8");
+    spriteLabel.position.set(0, 3.2, 0);
+    spritePole.add(sprite, spriteLabel);
+    scene.add(spritePole);
+    items.push({ kind: "sprite", root: spritePole, face: sprite });
+
+    const spherical = makePole(0);
+    const sphericalQuad = makeQuad(0x6ec6ff);
+    sphericalQuad.position.set(0, 2.15, 0);
+    const sphericalLabel = makeLabel("Spherical", "#6ec6ff");
+    sphericalLabel.position.set(0, 3.2, 0);
+    spherical.add(sphericalQuad, sphericalLabel);
+    scene.add(spherical);
+    items.push({ kind: "spherical", root: spherical, face: sphericalQuad });
+
+    const cylindrical = makePole(3);
+    const cylindricalQuad = makeQuad(0xf0c14b);
+    cylindricalQuad.position.set(0, 2.15, 0);
+    const cylindricalLabel = makeLabel("Cylindrical", "#f0c14b");
+    cylindricalLabel.position.set(0, 3.2, 0);
+    cylindrical.add(cylindricalQuad, cylindricalLabel);
+    scene.add(cylindrical);
+    items.push({ kind: "cylindrical", root: cylindrical, face: cylindricalQuad });
+
+    const gpuGeom = new THREE.BufferGeometry();
+    gpuGeom.setAttribute("position", new THREE.Float32BufferAttribute([
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ], 3));
+    gpuGeom.setAttribute("aCorner", new THREE.Float32BufferAttribute([
+      -1, -1, 1, -1, 1, 1, -1, 1,
+    ], 2));
+    gpuGeom.setIndex([0, 1, 2, 0, 2, 3]);
+
+    const gpuMat = new THREE.ShaderMaterial({
+      uniforms: { uSize: { value: 0.75 } },
+      side: THREE.DoubleSide,
+      vertexShader: `
+        attribute vec2 aCorner;
+        uniform float uSize;
+        varying vec2 vCorner;
+        void main() {
+          vCorner = aCorner;
+          vec4 viewPos = modelViewMatrix * vec4(position, 1.0);
+          viewPos.xy += aCorner * uSize;
+          gl_Position = projectionMatrix * viewPos;
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vCorner;
+        void main() {
+          float edge = max(abs(vCorner.x), abs(vCorner.y));
+          vec3 color = mix(vec3(0.55, 0.28, 0.95), vec3(0.86, 0.74, 1.0), 1.0 - edge);
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `,
+    });
+
+    const gpuPole = makePole(6);
+    const gpuQuad = new THREE.Mesh(gpuGeom, gpuMat);
+    gpuQuad.position.set(0, 2.15, 0);
+    const gpuLabel = makeLabel("GPU Expand", "#c084fc");
+    gpuLabel.position.set(0, 3.2, 0);
+    gpuPole.add(gpuQuad, gpuLabel);
+    scene.add(gpuPole);
+    items.push({ kind: "gpu", root: gpuPole, face: gpuQuad });
+
+    const worldCam = new THREE.Vector3();
+    const worldFace = new THREE.Vector3();
+    const lookTarget = new THREE.Vector3();
+
+    function applyBillboards() {
+      camera.getWorldPosition(worldCam);
+
+      for (const item of items) {
+        if (item.kind === "spherical") {
+          item.face.quaternion.copy(camera.quaternion);
+        }
+        if (item.kind === "cylindrical") {
+          item.face.getWorldPosition(worldFace);
+          lookTarget.copy(worldCam);
+          lookTarget.y = worldFace.y;
+          item.face.lookAt(lookTarget);
+        }
+      }
+    }
+
+    function resize() {
+      const { clientWidth, clientHeight } = canvas;
+      renderer.setSize(clientWidth, clientHeight, false);
+      camera.aspect = clientWidth / Math.max(clientHeight, 1);
+      camera.updateProjectionMatrix();
+    }
+
+    const autoBtn = document.getElementById("autoRotate");
+    const lockBtn = document.getElementById("lockY");
+    autoBtn.addEventListener("click", () => {
+      controls.autoRotate = !controls.autoRotate;
+      autoBtn.classList.toggle("active", controls.autoRotate);
+    });
+    lockBtn.addEventListener("click", () => {
+      controls.minPolarAngle = controls.minPolarAngle === 0 ? Math.PI / 2.15 : 0;
+      controls.maxPolarAngle = controls.minPolarAngle === 0 ? Math.PI : Math.PI / 2.15;
+      lockBtn.classList.toggle("active");
+    });
+
+    window.addEventListener("resize", resize);
+    resize();
+
+    function tick() {
+      controls.update();
+      applyBillboards();
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+  </script>
+</body>
+</html>
