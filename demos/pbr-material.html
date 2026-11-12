@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>粗糙度 / 金属度矩阵</title>
+  <style>
+    :root {
+      --demo-text: var(--vp-c-text-1, #e5e1d8);
+      --demo-muted: var(--vp-c-text-2, #a8a399);
+      --demo-line: var(--vp-c-divider, #3f3c34);
+      --demo-panel: var(--vp-c-bg-elv, rgba(38, 38, 36, 0.92));
+      --demo-soft: var(--vp-c-brand-soft, #3a2e28);
+      --demo-brand: var(--vp-c-brand-1, #e08d6e);
+      --demo-font: var(--vp-font-family-base, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #0d0f14;
+      color: var(--demo-text);
+      font-family: var(--demo-font);
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #0d0f14;
+    }
+
+    #view {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: calc(100% - 250px);
+    }
+
+    .chip, button {
+      border: 1px solid var(--demo-line);
+      background: var(--demo-panel);
+      color: var(--demo-text);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font: 12px/1.4 var(--demo-font);
+    }
+
+    button { cursor: pointer; }
+    button.active {
+      border-color: var(--demo-brand);
+      color: var(--demo-brand);
+      background: var(--demo-soft);
+    }
+
+    .panel {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 200px;
+      display: grid;
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--demo-panel);
+      border: 1px solid var(--demo-line);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .row { display: grid; gap: 4px; }
+    .row > span {
+      display: flex;
+      justify-content: space-between;
+      color: var(--demo-muted);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--demo-brand);
+    }
+
+    .legend {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      display: grid;
+      gap: 6px;
+      max-width: min(460px, calc(100% - 32px));
+      padding: 12px 14px;
+      background: var(--demo-panel);
+      border: 1px solid var(--demo-line);
+      border-radius: 8px;
+      color: var(--demo-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <section class="stage">
+    <canvas id="view"></canvas>
+    <div class="hud">
+      <button data-base="dielectric" class="active">电介质基色</button>
+      <button data-base="gold">金</button>
+      <button data-base="copper">铜</button>
+      <button id="envToggle" class="active">环境光</button>
+    </div>
+    <div class="panel">
+      <div class="row">
+        <span>直接光强度<b id="dirVal">2.0</b></span>
+        <input id="dirLight" type="range" min="0" max="5" step="0.1" value="2" />
+      </div>
+      <div class="row">
+        <span>环境强度<b id="envVal">1.0</b></span>
+        <input id="envInt" type="range" min="0" max="2" step="0.05" value="1" />
+      </div>
+    </div>
+    <div class="legend">
+      <div>横轴：粗糙度 0 → 1（高光从锐利变成一大片）</div>
+      <div>纵轴：金属度 0 → 1（漫反射消失，高光染上基色）</div>
+      <div>关掉环境光：金属行几乎全黑，只剩一个光源的镜像</div>
+    </div>
+  </section>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+    const THEME_KEYS = [
+      "--vp-c-bg",
+      "--vp-c-bg-alt",
+      "--vp-c-bg-soft",
+      "--vp-c-bg-elv",
+      "--vp-c-text-1",
+      "--vp-c-text-2",
+      "--vp-c-text-3",
+      "--vp-c-divider",
+      "--vp-c-border",
+      "--vp-c-brand-1",
+      "--vp-c-brand-soft",
+      "--vp-font-family-base",
+      "--vp-font-family-mono",
+    ];
+
+    function syncThemeFromParent() {
+      if (window.parent === window) return;
+      try {
+        const root = window.parent.document.documentElement;
+        const styles = window.parent.getComputedStyle(root);
+        for (const key of THEME_KEYS) {
+          const value = styles.getPropertyValue(key);
+          if (value) document.documentElement.style.setProperty(key, value);
+        }
+        document.documentElement.classList.toggle("dark", root.classList.contains("dark"));
+      } catch {
+        // 跨域 iframe 读不到父页，保持 fallback
+      }
+    }
+
+    syncThemeFromParent();
+    if (window.parent !== window) {
+      try {
+        new MutationObserver(syncThemeFromParent).observe(
+          window.parent.document.documentElement,
+          { attributes: true, attributeFilter: ["class"] }
+        );
+      } catch {
+        // ignore
+      }
+    }
+
+    const canvas = document.getElementById("view");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x0d0f14, 1);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1;
+
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.set(0, 0.2, 11);
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.target.set(0, 0.1, 0);
+    controls.minDistance = 5;
+    controls.maxDistance = 20;
+
+    const keyLight = new THREE.DirectionalLight(0xfff1e0, 2);
+    keyLight.position.set(4, 5, 6);
+    scene.add(keyLight);
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envTexture;
+
+    const BASES = {
+      dielectric: 0xd8d4cc,
+      gold: 0xffc65c,
+      copper: 0xd88a63,
+    };
+
+    const COLS = 6;
+    const ROWS = 4;
+    const GAP = 1.15;
+    const materials = [];
+
+    const measurer = document.createElement("canvas").getContext("2d");
+
+    function makeText(text, { size = 34, color = "#a8a399", vertical = false } = {}) {
+      const font = `600 ${size}px sans-serif`;
+      measurer.font = font;
+      const textWidth = Math.ceil(measurer.measureText(text).width) + 12;
+      const textHeight = Math.ceil(size * 1.4);
+
+      const c = document.createElement("canvas");
+      c.width = vertical ? textHeight : textWidth;
+      c.height = vertical ? textWidth : textHeight;
+      const ctx = c.getContext("2d");
+      ctx.translate(c.width / 2, c.height / 2);
+      if (vertical) ctx.rotate(-Math.PI / 2);
+      ctx.font = font;
+      ctx.fillStyle = color;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, 0, 0);
+
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true })
+      );
+      const WORLD_PER_PIXEL = 0.0072;
+      sprite.scale.set(c.width * WORLD_PER_PIXEL, c.height * WORLD_PER_PIXEL, 1);
+      return sprite;
+    }
+
+    const grid = new THREE.Group();
+    scene.add(grid);
+
+    const sphere = new THREE.SphereGeometry(0.46, 48, 32);
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        const roughness = Math.max(0.04, col / (COLS - 1));
+        const metalness = row / (ROWS - 1);
+        const material = new THREE.MeshStandardMaterial({
+          color: BASES.dielectric,
+          roughness,
+          metalness,
+        });
+        const mesh = new THREE.Mesh(sphere, material);
+        mesh.position.set(
+          (col - (COLS - 1) / 2) * GAP,
+          (row - (ROWS - 1) / 2) * GAP,
+          0
+        );
+        grid.add(mesh);
+        materials.push(material);
+      }
+    }
+
+    for (let col = 0; col < COLS; col++) {
+      const label = makeText(Math.max(0.04, col / (COLS - 1)).toFixed(2));
+      label.position.set((col - (COLS - 1) / 2) * GAP, (-ROWS * GAP) / 2 - 0.3, 0);
+      grid.add(label);
+    }
+    for (let row = 0; row < ROWS; row++) {
+      const label = makeText((row / (ROWS - 1)).toFixed(2));
+      label.position.set((-COLS * GAP) / 2 - 0.45, (row - (ROWS - 1) / 2) * GAP, 0);
+      grid.add(label);
+    }
+
+    const axisX = makeText("粗糙度 roughness →", { size: 30, color: "#e08d6e" });
+    axisX.position.set(0, (-ROWS * GAP) / 2 - 0.9, 0);
+    grid.add(axisX);
+
+    const axisY = makeText("金属度 metalness ↑", { size: 30, color: "#e08d6e", vertical: true });
+    axisY.position.set((-COLS * GAP) / 2 - 1.05, 0, 0);
+    grid.add(axisY);
+
+    let envOn = true;
+    let envIntensity = 1;
+
+    function applyEnv() {
+      scene.environment = envOn ? envTexture : null;
+      for (const material of materials) {
+        material.envMapIntensity = envIntensity;
+        material.needsUpdate = true;
+      }
+    }
+    applyEnv();
+
+    for (const button of document.querySelectorAll("[data-base]")) {
+      button.addEventListener("click", () => {
+        for (const other of document.querySelectorAll("[data-base]")) {
+          other.classList.toggle("active", other === button);
+        }
+        const hex = BASES[button.dataset.base];
+        for (const material of materials) material.color.setHex(hex);
+      });
+    }
+
+    const envToggle = document.getElementById("envToggle");
+    envToggle.addEventListener("click", () => {
+      envOn = !envOn;
+      envToggle.classList.toggle("active", envOn);
+      applyEnv();
+    });
+
+    const dirInput = document.getElementById("dirLight");
+    const dirVal = document.getElementById("dirVal");
+    dirInput.addEventListener("input", () => {
+      keyLight.intensity = Number(dirInput.value);
+      dirVal.textContent = keyLight.intensity.toFixed(1);
+    });
+
+    const envInput = document.getElementById("envInt");
+    const envVal = document.getElementById("envVal");
+    envInput.addEventListener("input", () => {
+      envIntensity = Number(envInput.value);
+      envVal.textContent = envIntensity.toFixed(2);
+      for (const material of materials) material.envMapIntensity = envIntensity;
+    });
+
+    // 内容包围盒（含坐标标签），用来把整块矩阵塞进不被 HUD 遮住的安全区
+    const bounds = new THREE.Box3().setFromObject(grid);
+    const boundsSize = bounds.getSize(new THREE.Vector3());
+    const CONTENT = {
+      center: bounds.getCenter(new THREE.Vector3()),
+      width: boundsSize.x + 0.4,
+      height: boundsSize.y + 0.4,
+    };
+    const viewDir = new THREE.Vector3();
+    const camRight = new THREE.Vector3();
+    const camUp = new THREE.Vector3();
+    const hudElement = document.querySelector(".hud");
+    const panelElement = document.querySelector(".panel");
+    const legendElement = document.querySelector(".legend");
+
+    function resize() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / Math.max(h, 1);
+      camera.updateProjectionMatrix();
+
+      // 安全区 = 去掉 HUD、右侧面板、图例三块覆盖层之后剩下的位置
+      const safe = {
+        top: hudElement.offsetHeight + 26,
+        bottom: legendElement.offsetHeight + 26,
+        left: 12,
+        right: panelElement.offsetWidth + 32,
+      };
+      const availW = Math.max(w - safe.left - safe.right, 120);
+      const availH = Math.max(h - safe.top - safe.bottom, 90);
+
+      const halfTan = Math.tan((camera.fov * Math.PI) / 360);
+      const distV = ((CONTENT.height * h) / availH) / (2 * halfTan);
+      const distH = ((CONTENT.width * w) / availW) / (2 * halfTan * Math.max(camera.aspect, 0.2));
+      const distance = Math.max(distV, distH);
+
+      // 安全区中心在 NDC 里的位置，把内容中心搬过去
+      const ndcX = ((safe.left + availW / 2) / w) * 2 - 1;
+      const ndcY = 1 - ((safe.top + availH / 2) / h) * 2;
+      const halfHeight = distance * halfTan;
+      const halfWidth = halfHeight * camera.aspect;
+
+      viewDir.copy(camera.position).sub(controls.target);
+      if (viewDir.lengthSq() < 1e-6) viewDir.set(0, 0, 1);
+      viewDir.normalize();
+      camRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
+      camUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+
+      controls.target
+        .copy(CONTENT.center)
+        .addScaledVector(camRight, -ndcX * halfWidth)
+        .addScaledVector(camUp, -ndcY * halfHeight);
+      camera.position.copy(controls.target).addScaledVector(viewDir, distance);
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+
+    function tick() {
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+  </script>
+</body>
+</html>

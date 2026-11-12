@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Schlick 菲涅尔曲线</title>
+  <style>
+    :root {
+      --demo-text: var(--vp-c-text-1, #e5e1d8);
+      --demo-muted: var(--vp-c-text-2, #a8a399);
+      --demo-line: var(--vp-c-divider, #3f3c34);
+      --demo-panel: var(--vp-c-bg-elv, rgba(38, 38, 36, 0.92));
+      --demo-soft: var(--vp-c-brand-soft, #3a2e28);
+      --demo-brand: var(--vp-c-brand-1, #e08d6e);
+      --demo-font: var(--vp-font-family-base, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #0d0f14;
+      color: var(--demo-text);
+      font-family: var(--demo-font);
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #0d0f14;
+    }
+
+    #view {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: calc(100% - 250px);
+    }
+
+    .chip, button {
+      border: 1px solid var(--demo-line);
+      background: var(--demo-panel);
+      color: var(--demo-text);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font: 12px/1.4 var(--demo-font);
+    }
+
+    button { cursor: pointer; }
+    button.active {
+      border-color: var(--demo-brand);
+      color: var(--demo-brand);
+      background: var(--demo-soft);
+    }
+
+    .panel {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 200px;
+      display: grid;
+      gap: 9px;
+      padding: 12px 14px;
+      background: var(--demo-panel);
+      border: 1px solid var(--demo-line);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .row { display: grid; gap: 4px; }
+    .row > span {
+      display: flex;
+      justify-content: space-between;
+      color: var(--demo-muted);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--demo-brand);
+    }
+
+    .legend {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      display: grid;
+      gap: 6px;
+      max-width: min(470px, calc(100% - 32px));
+      padding: 12px 14px;
+      background: var(--demo-panel);
+      border: 1px solid var(--demo-line);
+      border-radius: 8px;
+      color: var(--demo-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <section class="stage">
+    <canvas id="view"></canvas>
+    <div class="hud">
+      <button data-preset="water">水 0.02</button>
+      <button data-preset="plastic" class="active">电介质 0.04</button>
+      <button data-preset="gem">宝石 0.17</button>
+      <button data-preset="gold">金</button>
+      <button data-preset="copper">铜</button>
+      <button data-preset="silver">银</button>
+      <button data-preset="iron">铁</button>
+      <button data-preset="custom">自定义</button>
+      <button id="logToggle">Y 轴对数</button>
+    </div>
+    <div class="panel">
+      <div class="row">
+        <span>入射角 θ<b id="angleVal">0°</b></span>
+        <input id="angle" type="range" min="0" max="89.5" step="0.5" value="0" />
+      </div>
+      <div class="row">
+        <span>自定义 F0<b id="customVal">0.04</b></span>
+        <input id="custom" type="range" min="0.01" max="1" step="0.005" value="0.04" />
+      </div>
+    </div>
+    <div class="legend">
+      <div id="readout">F(0°) = 0.040 · 0.040 · 0.040</div>
+      <div>虚线是 F0 = 0.04 的电介质参考线；θ 是入射方向与半程向量的夹角</div>
+      <div>右侧球面：正对相机时 n·v 沿半径递减，边缘就是掠射角</div>
+    </div>
+  </section>
+
+  <script type="module">
+    const THEME_KEYS = [
+      "--vp-c-bg",
+      "--vp-c-bg-alt",
+      "--vp-c-bg-soft",
+      "--vp-c-bg-elv",
+      "--vp-c-text-1",
+      "--vp-c-text-2",
+      "--vp-c-text-3",
+      "--vp-c-divider",
+      "--vp-c-border",
+      "--vp-c-brand-1",
+      "--vp-c-brand-soft",
+      "--vp-font-family-base",
+      "--vp-font-family-mono",
+    ];
+
+    function syncThemeFromParent() {
+      if (window.parent === window) return;
+      try {
+        const root = window.parent.document.documentElement;
+        const styles = window.parent.getComputedStyle(root);
+        for (const key of THEME_KEYS) {
+          const value = styles.getPropertyValue(key);
+          if (value) document.documentElement.style.setProperty(key, value);
+        }
+        document.documentElement.classList.toggle("dark", root.classList.contains("dark"));
+      } catch {
+        // 跨域 iframe 读不到父页，保持 fallback
+      }
+      draw();
+    }
+
+    const PRESETS = {
+      water: { name: "水", f0: [0.02, 0.02, 0.02] },
+      plastic: { name: "大部分电介质", f0: [0.04, 0.04, 0.04] },
+      gem: { name: "宝石", f0: [0.17, 0.17, 0.17] },
+      gold: { name: "金", f0: [1.0, 0.71, 0.29] },
+      copper: { name: "铜", f0: [0.95, 0.64, 0.54] },
+      silver: { name: "银", f0: [0.97, 0.96, 0.91] },
+      iron: { name: "铁", f0: [0.56, 0.57, 0.58] },
+      custom: { name: "自定义", f0: [0.04, 0.04, 0.04] },
+    };
+
+    const canvas = document.getElementById("view");
+    const ctx = canvas.getContext("2d");
+    const readout = document.getElementById("readout");
+
+    let preset = "plastic";
+    let theta = 0;
+    let logScale = false;
+
+    function currentF0() {
+      return PRESETS[preset].f0;
+    }
+
+    function schlick(f0, cosTheta) {
+      return f0 + (1 - f0) * Math.pow(1 - cosTheta, 5);
+    }
+
+    function encode(linear) {
+      return Math.round(255 * Math.pow(Math.min(Math.max(linear, 0), 1), 1 / 2.2));
+    }
+
+    function cssVar(name, fallback) {
+      const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return value || fallback;
+    }
+
+    // 舞台底色固定是深色，画在 canvas 上的文字不能跟着浅色主题走
+    const STAGE_TEXT = "#e5e1d8";
+    const STAGE_MUTED = "#a8a399";
+    const STAGE_LINE = "#3f3c34";
+
+    // 对数轴下把 [0.01,1] 映射到 [0,1]
+    const LOG_MIN = 0.01;
+    function toUnit(value) {
+      if (!logScale) return value;
+      const clamped = Math.max(value, LOG_MIN);
+      return (Math.log10(clamped) - Math.log10(LOG_MIN)) / -Math.log10(LOG_MIN);
+    }
+
+    let chart = { x: 0, y: 0, w: 0, h: 0 };
+    let ball = null;
+
+    const legendElement = document.querySelector(".legend");
+    const hudElement = document.querySelector(".hud");
+    const panelElement = document.querySelector(".panel");
+
+    // HUD / 面板 / 图例都是绝对定位的覆盖层，图表只能画在它们让出来的区域里
+    function layout(w, h) {
+      const hudBottom = hudElement.offsetHeight + 26;
+      const panelBottom = panelElement.offsetHeight + 26;
+      const bottomReserve = legendElement.offsetHeight + 54;
+      // 球画在面板正下方，和面板共用右边这一列，不用额外留宽度
+      const panelBand = 236;
+
+      let showBall;
+      let right;
+      let top;
+      if (w - panelBand - 52 >= 300) {
+        showBall = true;
+        right = w - panelBand;
+        top = hudBottom;
+      } else {
+        showBall = false;
+        right = w - 24;
+        top = Math.max(hudBottom, panelBottom);
+      }
+
+      chart = {
+        x: 52,
+        y: top,
+        w: Math.max(120, right - 52),
+        h: Math.max(90, h - top - bottomReserve),
+      };
+
+      // 球面预览放在右侧控制面板下方，避免和面板、图例重叠
+      const ballTop = panelBottom + 14;
+      const ballBottom = h - 112;
+      ball = showBall
+        ? {
+            cx: w - 140,
+            cy: (ballTop + ballBottom) / 2,
+            r: Math.min(84, (ballBottom - ballTop) / 2 - 10),
+          }
+        : null;
+      if (ball && ball.r < 36) ball = null;
+    }
+
+    function drawGrid(text, muted, line) {
+      ctx.strokeStyle = line;
+      ctx.fillStyle = muted;
+      ctx.lineWidth = 1;
+
+      const yTicks = logScale ? [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1] : [0, 0.2, 0.4, 0.6, 0.8, 1];
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (const tick of yTicks) {
+        const y = chart.y + chart.h * (1 - toUnit(tick));
+        ctx.globalAlpha = 0.35;
+        ctx.beginPath();
+        ctx.moveTo(chart.x, y);
+        ctx.lineTo(chart.x + chart.w, y);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillText(String(tick), chart.x - 8, y);
+      }
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      for (let deg = 0; deg <= 90; deg += 15) {
+        const x = chart.x + (chart.w * deg) / 90;
+        ctx.globalAlpha = 0.35;
+        ctx.beginPath();
+        ctx.moveTo(x, chart.y);
+        ctx.lineTo(x, chart.y + chart.h);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillText(`${deg}°`, x, chart.y + chart.h + 8);
+      }
+
+      ctx.fillStyle = text;
+      ctx.textAlign = "left";
+      ctx.fillText("F", chart.x - 44, chart.y - 6);
+      ctx.textAlign = "right";
+      ctx.fillText("入射角 θ", chart.x + chart.w, chart.y + chart.h + 24);
+    }
+
+    function curvePath(f0, color, dashed) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = dashed ? 1.2 : 2;
+      ctx.setLineDash(dashed ? [5, 4] : []);
+      ctx.beginPath();
+      const steps = 180;
+      for (let i = 0; i <= steps; i++) {
+        const deg = (90 * i) / steps;
+        const value = schlick(f0, Math.cos((deg * Math.PI) / 180));
+        const x = chart.x + (chart.w * deg) / 90;
+        const y = chart.y + chart.h * (1 - toUnit(value));
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function drawBall() {
+      if (!ball) return;
+      const size = Math.floor(ball.r * 2);
+      const image = ctx.createImageData(size, size);
+      const f0 = currentF0();
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const dx = (x + 0.5) / ball.r - 1;
+          const dy = (y + 0.5) / ball.r - 1;
+          const d2 = dx * dx + dy * dy;
+          const index = (y * size + x) * 4;
+          if (d2 > 1) continue;
+          const cosTheta = Math.sqrt(1 - d2);
+          image.data[index] = encode(schlick(f0[0], cosTheta));
+          image.data[index + 1] = encode(schlick(f0[1], cosTheta));
+          image.data[index + 2] = encode(schlick(f0[2], cosTheta));
+          image.data[index + 3] = 255;
+        }
+      }
+      ctx.putImageData(image, Math.round(ball.cx - ball.r), Math.round(ball.cy - ball.r));
+
+      // 当前角度对应的等值圆：sinθ = 到球心的归一化距离
+      ctx.strokeStyle = cssVar("--vp-c-brand-1", "#e08d6e");
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(ball.cx, ball.cy, ball.r * Math.sin((theta * Math.PI) / 180), 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = STAGE_MUTED;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("F 在球面上的分布", ball.cx, ball.cy + ball.r + 10);
+    }
+
+    function draw() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      ctx.clearRect(0, 0, w, h);
+      layout(w, h);
+
+      const text = STAGE_TEXT;
+      const muted = STAGE_MUTED;
+      const line = STAGE_LINE;
+      const brand = cssVar("--vp-c-brand-1", "#e08d6e");
+
+      ctx.font = "11px sans-serif";
+      drawGrid(text, muted, line);
+
+      // 参考线：F0 = 0.04
+      if (preset !== "plastic") curvePath(0.04, muted, true);
+
+      const f0 = currentF0();
+      const grayscale = Math.abs(f0[0] - f0[1]) < 0.01 && Math.abs(f0[1] - f0[2]) < 0.01;
+      if (grayscale) {
+        curvePath(f0[0], text, false);
+      } else {
+        curvePath(f0[0], "#ff6b6b", false);
+        curvePath(f0[1], "#7dd3a8", false);
+        curvePath(f0[2], "#6ec6ff", false);
+      }
+
+      // 当前角度游标
+      const x = chart.x + (chart.w * theta) / 90;
+      ctx.strokeStyle = brand;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, chart.y);
+      ctx.lineTo(x, chart.y + chart.h);
+      ctx.stroke();
+
+      const cosTheta = Math.cos((theta * Math.PI) / 180);
+      const values = f0.map((c) => schlick(c, cosTheta));
+      for (const value of values) {
+        ctx.fillStyle = brand;
+        ctx.beginPath();
+        ctx.arc(x, chart.y + chart.h * (1 - toUnit(value)), 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 当前角度下反射光的颜色
+      ctx.fillStyle = `rgb(${encode(values[0])},${encode(values[1])},${encode(values[2])})`;
+      ctx.fillRect(chart.x + chart.w - 54, chart.y + 10, 44, 20);
+      ctx.strokeStyle = line;
+      ctx.strokeRect(chart.x + chart.w - 54, chart.y + 10, 44, 20);
+      ctx.fillStyle = muted;
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText("θ 处反射色", chart.x + chart.w - 62, chart.y + 20);
+
+      drawBall();
+
+      readout.textContent =
+        `${PRESETS[preset].name} · F(${theta.toFixed(1)}°) = ` +
+        values.map((v) => v.toFixed(3)).join(" · ");
+    }
+
+    for (const button of document.querySelectorAll("[data-preset]")) {
+      button.addEventListener("click", () => {
+        for (const other of document.querySelectorAll("[data-preset]")) {
+          other.classList.toggle("active", other === button);
+        }
+        preset = button.dataset.preset;
+        draw();
+      });
+    }
+
+    const logToggle = document.getElementById("logToggle");
+    logToggle.addEventListener("click", () => {
+      logScale = !logScale;
+      logToggle.classList.toggle("active", logScale);
+      draw();
+    });
+
+    const angleInput = document.getElementById("angle");
+    const angleVal = document.getElementById("angleVal");
+    angleInput.addEventListener("input", () => {
+      theta = Number(angleInput.value);
+      angleVal.textContent = `${theta.toFixed(1)}°`;
+      draw();
+    });
+
+    const customInput = document.getElementById("custom");
+    const customVal = document.getElementById("customVal");
+    customInput.addEventListener("input", () => {
+      const value = Number(customInput.value);
+      customVal.textContent = value.toFixed(3);
+      PRESETS.custom.f0 = [value, value, value];
+      if (preset === "custom") draw();
+    });
+
+    canvas.addEventListener("pointermove", (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      if (x < chart.x || x > chart.x + chart.w || y < chart.y || y > chart.y + chart.h) return;
+      theta = Math.min(89.5, Math.max(0, (90 * (x - chart.x)) / chart.w));
+      angleInput.value = String(theta);
+      angleVal.textContent = `${theta.toFixed(1)}°`;
+      draw();
+    });
+
+    syncThemeFromParent();
+    if (window.parent !== window) {
+      try {
+        new MutationObserver(syncThemeFromParent).observe(
+          window.parent.document.documentElement,
+          { attributes: true, attributeFilter: ["class"] }
+        );
+      } catch {
+        // ignore
+      }
+    }
+
+    window.addEventListener("resize", draw);
+    draw();
+  </script>
+</body>
+</html>

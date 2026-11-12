@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IBL 分割求和</title>
+  <style>
+    :root {
+      --demo-text: var(--vp-c-text-1, #e5e1d8);
+      --demo-muted: var(--vp-c-text-2, #a8a399);
+      --demo-line: var(--vp-c-divider, #3f3c34);
+      --demo-panel: var(--vp-c-bg-elv, rgba(38, 38, 36, 0.92));
+      --demo-soft: var(--vp-c-brand-soft, #3a2e28);
+      --demo-brand: var(--vp-c-brand-1, #e08d6e);
+      --demo-font: var(--vp-font-family-base, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #0d0f14;
+      color: var(--demo-text);
+      font-family: var(--demo-font);
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #0d0f14;
+    }
+
+    #view {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: calc(100% - 250px);
+    }
+
+    .chip, button {
+      border: 1px solid var(--demo-line);
+      background: var(--demo-panel);
+      color: var(--demo-text);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font: 12px/1.4 var(--demo-font);
+    }
+
+    button { cursor: pointer; }
+    button.active {
+      border-color: var(--demo-brand);
+      color: var(--demo-brand);
+      background: var(--demo-soft);
+    }
+
+    .panel {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 200px;
+      display: grid;
+      gap: 9px;
+      padding: 12px 14px;
+      background: var(--demo-panel);
+      border: 1px solid var(--demo-line);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .row { display: grid; gap: 4px; }
+    .row > span {
+      display: flex;
+      justify-content: space-between;
+      color: var(--demo-muted);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--demo-brand);
+    }
+
+    .legend {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      display: grid;
+      gap: 6px;
+      max-width: min(430px, calc(100% - 268px));
+      padding: 12px 14px;
+      background: var(--demo-panel);
+      border: 1px solid var(--demo-line);
+      border-radius: 8px;
+      color: var(--demo-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .maps {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      display: grid;
+      gap: 6px;
+      padding: 10px 12px;
+      background: var(--demo-panel);
+      border: 1px solid var(--demo-line);
+      border-radius: 8px;
+      color: var(--demo-muted);
+      font-size: 11px;
+    }
+
+    .strip { display: flex; gap: 4px; }
+    .strip canvas {
+      width: 60px;
+      height: 30px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      display: block;
+    }
+    .strip canvas.active { border-color: var(--demo-brand); }
+
+    /* 窄的嵌入框里给两块底部面板腾地方 */
+    @media (max-width: 760px) {
+      .strip canvas { width: 40px; height: 20px; }
+      .maps { padding: 8px 10px; font-size: 10px; }
+      .legend { max-width: calc(100% - 280px); }
+      .legend .more { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <section class="stage">
+    <canvas id="view"></canvas>
+    <div class="hud">
+      <button data-mode="0" class="active">合成</button>
+      <button data-mode="1">漫反射辐照度</button>
+      <button data-mode="2">镜面反射</button>
+      <button data-base="white" class="active">电介质</button>
+      <button data-base="gold">金</button>
+      <button data-base="copper">铜</button>
+      <button id="bgToggle" class="active">背景跟随粗糙度</button>
+    </div>
+    <div class="panel">
+      <div class="row">
+        <span>粗糙度<b id="roughVal">0.20</b></span>
+        <input id="rough" type="range" min="0" max="1" step="0.01" value="0.2" />
+      </div>
+      <div class="row">
+        <span>金属度<b id="metalVal">1.00</b></span>
+        <input id="metal" type="range" min="0" max="1" step="0.01" value="1" />
+      </div>
+      <div class="row">
+        <span>环境强度<b id="envVal">1.00</b></span>
+        <input id="env" type="range" min="0" max="2" step="0.05" value="1" />
+      </div>
+    </div>
+    <div class="legend">
+      <div id="legendText">合成 = 漫反射辐照度项 + 预滤波环境 × (F0·A + B)</div>
+      <div class="more">右下是启动时算出来的两张预计算贴图：辐照度图按余弦加权卷积，mip 链按 GGX 重要性采样，α = r²</div>
+      <div class="more">BRDF 积分这里用解析近似代替 2D LUT</div>
+    </div>
+    <div class="maps">
+      <div>辐照度图 32×16</div>
+      <div class="strip"><canvas id="irrMap" width="32" height="16"></canvas></div>
+      <div>预滤波 mip：r = 0 → 1</div>
+      <div class="strip" id="mipStrip"></div>
+    </div>
+  </section>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const THEME_KEYS = [
+      "--vp-c-bg",
+      "--vp-c-bg-alt",
+      "--vp-c-bg-soft",
+      "--vp-c-bg-elv",
+      "--vp-c-text-1",
+      "--vp-c-text-2",
+      "--vp-c-text-3",
+      "--vp-c-divider",
+      "--vp-c-border",
+      "--vp-c-brand-1",
+      "--vp-c-brand-soft",
+      "--vp-font-family-base",
+      "--vp-font-family-mono",
+    ];
+
+    function syncThemeFromParent() {
+      if (window.parent === window) return;
+      try {
+        const root = window.parent.document.documentElement;
+        const styles = window.parent.getComputedStyle(root);
+        for (const key of THEME_KEYS) {
+          const value = styles.getPropertyValue(key);
+          if (value) document.documentElement.style.setProperty(key, value);
+        }
+        document.documentElement.classList.toggle("dark", root.classList.contains("dark"));
+      } catch {
+        // 跨域 iframe 读不到父页，保持 fallback
+      }
+    }
+
+    syncThemeFromParent();
+    if (window.parent !== window) {
+      try {
+        new MutationObserver(syncThemeFromParent).observe(
+          window.parent.document.documentElement,
+          { attributes: true, attributeFilter: ["class"] }
+        );
+      } catch {
+        // ignore
+      }
+    }
+
+    // ─── 程序化环境：等距柱状投影，线性辐射度 ───
+    const SUN = new THREE.Vector3(0.55, 0.42, -0.72).normalize();
+    const WARM = new THREE.Vector3(-0.75, 0.2, 0.55).normalize();
+    const COOL = new THREE.Vector3(0.1, -0.15, 1.0).normalize();
+
+    function radiance(x, y, z, out) {
+      const sky = Math.max(y, 0);
+      let r, g, b;
+      if (y >= 0) {
+        r = 0.18 + 0.1 * (1 - sky);
+        g = 0.24 + 0.14 * (1 - sky);
+        b = 0.42 + 0.2 * (1 - sky);
+      } else {
+        const t = Math.min(-y * 3, 1);
+        r = 0.09 - 0.05 * t;
+        g = 0.075 - 0.042 * t;
+        b = 0.062 - 0.036 * t;
+      }
+
+      const sun = x * SUN.x + y * SUN.y + z * SUN.z;
+      if (sun > 0.986) {
+        const k = Math.min((sun - 0.986) / 0.006, 1);
+        r += 55 * k;
+        g += 50 * k;
+        b += 42 * k;
+      }
+
+      const warm = x * WARM.x + y * WARM.y + z * WARM.z;
+      if (warm > 0.86) {
+        const k = (warm - 0.86) / 0.14;
+        r += 3.2 * k;
+        g += 1.5 * k;
+        b += 0.5 * k;
+      }
+
+      const cool = x * COOL.x + y * COOL.y + z * COOL.z;
+      if (cool > 0.9) {
+        const k = (cool - 0.9) / 0.1;
+        r += 0.5 * k;
+        g += 1.1 * k;
+        b += 2.2 * k;
+      }
+
+      out[0] = r;
+      out[1] = g;
+      out[2] = b;
+    }
+
+    function makeLevel(w, h) {
+      return { w, h, data: new Float32Array(w * h * 3) };
+    }
+
+    function texelDirection(level, i, j, out) {
+      const phi = ((i + 0.5) / level.w - 0.5) * Math.PI * 2;
+      const theta = ((j + 0.5) / level.h) * Math.PI;
+      const sinTheta = Math.sin(theta);
+      out[0] = sinTheta * Math.cos(phi);
+      out[1] = Math.cos(theta);
+      out[2] = sinTheta * Math.sin(phi);
+    }
+
+    function buildBase(w, h) {
+      const level = makeLevel(w, h);
+      const dir = [0, 0, 0];
+      const rgb = [0, 0, 0];
+      for (let j = 0; j < h; j++) {
+        for (let i = 0; i < w; i++) {
+          texelDirection(level, i, j, dir);
+          radiance(dir[0], dir[1], dir[2], rgb);
+          const index = (j * w + i) * 3;
+          level.data[index] = rgb[0];
+          level.data[index + 1] = rgb[1];
+          level.data[index + 2] = rgb[2];
+        }
+      }
+      return level;
+    }
+
+    function sampleLevel(level, x, y, z, out) {
+      const u = Math.atan2(z, x) / (Math.PI * 2) + 0.5;
+      const v = Math.acos(Math.min(Math.max(y, -1), 1)) / Math.PI;
+      let fx = u * level.w - 0.5;
+      let fy = Math.min(Math.max(v * level.h - 0.5, 0), level.h - 1);
+      const x0 = Math.floor(fx);
+      const y0 = Math.floor(fy);
+      const tx = fx - x0;
+      const ty = fy - y0;
+      const xa = ((x0 % level.w) + level.w) % level.w;
+      const xb = (xa + 1) % level.w;
+      const ya = Math.min(Math.max(y0, 0), level.h - 1);
+      const yb = Math.min(ya + 1, level.h - 1);
+      for (let c = 0; c < 3; c++) {
+        const p00 = level.data[(ya * level.w + xa) * 3 + c];
+        const p10 = level.data[(ya * level.w + xb) * 3 + c];
+        const p01 = level.data[(yb * level.w + xa) * 3 + c];
+        const p11 = level.data[(yb * level.w + xb) * 3 + c];
+        out[c] = (p00 * (1 - tx) + p10 * tx) * (1 - ty) + (p01 * (1 - tx) + p11 * tx) * ty;
+      }
+    }
+
+    function downsample(source, w, h) {
+      const level = makeLevel(w, h);
+      const sx = source.w / w;
+      const sy = source.h / h;
+      for (let j = 0; j < h; j++) {
+        for (let i = 0; i < w; i++) {
+          let r = 0;
+          let g = 0;
+          let b = 0;
+          let count = 0;
+          for (let y = Math.floor(j * sy); y < Math.floor((j + 1) * sy); y++) {
+            for (let x = Math.floor(i * sx); x < Math.floor((i + 1) * sx); x++) {
+              const index = (y * source.w + x) * 3;
+              r += source.data[index];
+              g += source.data[index + 1];
+              b += source.data[index + 2];
+              count++;
+            }
+          }
+          const index = (j * w + i) * 3;
+          level.data[index] = r / Math.max(count, 1);
+          level.data[index + 1] = g / Math.max(count, 1);
+          level.data[index + 2] = b / Math.max(count, 1);
+        }
+      }
+      return level;
+    }
+
+    function hammersley(i, n) {
+      let bits = i;
+      bits = (bits << 16) | (bits >>> 16);
+      bits = ((bits & 0x55555555) << 1) | ((bits & 0xaaaaaaaa) >>> 1);
+      bits = ((bits & 0x33333333) << 2) | ((bits & 0xcccccccc) >>> 2);
+      bits = ((bits & 0x0f0f0f0f) << 4) | ((bits & 0xf0f0f0f0) >>> 4);
+      bits = ((bits & 0x00ff00ff) << 8) | ((bits & 0xff00ff00) >>> 8);
+      return [i / n, (bits >>> 0) * 2.3283064365386963e-10];
+    }
+
+    function tangentFrame(n, t, b) {
+      const up = Math.abs(n[1]) < 0.999 ? [0, 1, 0] : [1, 0, 0];
+      t[0] = up[1] * n[2] - up[2] * n[1];
+      t[1] = up[2] * n[0] - up[0] * n[2];
+      t[2] = up[0] * n[1] - up[1] * n[0];
+      const len = Math.hypot(t[0], t[1], t[2]) || 1;
+      t[0] /= len;
+      t[1] /= len;
+      t[2] /= len;
+      b[0] = n[1] * t[2] - n[2] * t[1];
+      b[1] = n[2] * t[0] - n[0] * t[2];
+      b[2] = n[0] * t[1] - n[1] * t[0];
+    }
+
+    // 预滤波：N = V = R 假设下的 GGX 重要性采样
+    function prefilter(source, roughness, w, h, samples) {
+      const level = makeLevel(w, h);
+      const n = [0, 0, 0];
+      const t = [0, 0, 0];
+      const b = [0, 0, 0];
+      const rgb = [0, 0, 0];
+      const alpha = roughness * roughness;
+      for (let j = 0; j < h; j++) {
+        for (let i = 0; i < w; i++) {
+          texelDirection(level, i, j, n);
+          tangentFrame(n, t, b);
+          let sumR = 0;
+          let sumG = 0;
+          let sumB = 0;
+          let weight = 0;
+          for (let s = 0; s < samples; s++) {
+            const [u1, u2] = hammersley(s, samples);
+            const phi = 2 * Math.PI * u1;
+            const cosTheta = Math.sqrt((1 - u2) / (1 + (alpha * alpha - 1) * u2));
+            const sinTheta = Math.sqrt(Math.max(1 - cosTheta * cosTheta, 0));
+            const hx = sinTheta * Math.cos(phi);
+            const hy = sinTheta * Math.sin(phi);
+            const hz = cosTheta;
+            const wx = t[0] * hx + b[0] * hy + n[0] * hz;
+            const wy = t[1] * hx + b[1] * hy + n[1] * hz;
+            const wz = t[2] * hx + b[2] * hy + n[2] * hz;
+            const vDotH = n[0] * wx + n[1] * wy + n[2] * wz;
+            const lx = 2 * vDotH * wx - n[0];
+            const ly = 2 * vDotH * wy - n[1];
+            const lz = 2 * vDotH * wz - n[2];
+            const nDotL = n[0] * lx + n[1] * ly + n[2] * lz;
+            if (nDotL <= 0) continue;
+            sampleLevel(source, lx, ly, lz, rgb);
+            sumR += rgb[0] * nDotL;
+            sumG += rgb[1] * nDotL;
+            sumB += rgb[2] * nDotL;
+            weight += nDotL;
+          }
+          const index = (j * w + i) * 3;
+          const inv = 1 / Math.max(weight, 1e-4);
+          level.data[index] = sumR * inv;
+          level.data[index + 1] = sumG * inv;
+          level.data[index + 2] = sumB * inv;
+        }
+      }
+      return level;
+    }
+
+    // 辐照度：余弦加权采样，直接存 E/π
+    function irradiance(source, w, h, samples) {
+      const level = makeLevel(w, h);
+      const n = [0, 0, 0];
+      const t = [0, 0, 0];
+      const b = [0, 0, 0];
+      const rgb = [0, 0, 0];
+      for (let j = 0; j < h; j++) {
+        for (let i = 0; i < w; i++) {
+          texelDirection(level, i, j, n);
+          tangentFrame(n, t, b);
+          let sumR = 0;
+          let sumG = 0;
+          let sumB = 0;
+          for (let s = 0; s < samples; s++) {
+            const [u1, u2] = hammersley(s, samples);
+            const cosTheta = Math.sqrt(1 - u1);
+            const sinTheta = Math.sqrt(u1);
+            const phi = 2 * Math.PI * u2;
+            const dx = sinTheta * Math.cos(phi);
+            const dy = sinTheta * Math.sin(phi);
+            const lx = t[0] * dx + b[0] * dy + n[0] * cosTheta;
+            const ly = t[1] * dx + b[1] * dy + n[1] * cosTheta;
+            const lz = t[2] * dx + b[2] * dy + n[2] * cosTheta;
+            sampleLevel(source, lx, ly, lz, rgb);
+            sumR += rgb[0];
+            sumG += rgb[1];
+            sumB += rgb[2];
+          }
+          const index = (j * w + i) * 3;
+          level.data[index] = sumR / samples;
+          level.data[index + 1] = sumG / samples;
+          level.data[index + 2] = sumB / samples;
+        }
+      }
+      return level;
+    }
+
+    function toTexture(level) {
+      const data = new Uint16Array(level.w * level.h * 4);
+      for (let i = 0; i < level.w * level.h; i++) {
+        data[i * 4] = THREE.DataUtils.toHalfFloat(level.data[i * 3]);
+        data[i * 4 + 1] = THREE.DataUtils.toHalfFloat(level.data[i * 3 + 1]);
+        data[i * 4 + 2] = THREE.DataUtils.toHalfFloat(level.data[i * 3 + 2]);
+        data[i * 4 + 3] = THREE.DataUtils.toHalfFloat(1);
+      }
+      const texture = new THREE.DataTexture(
+        data,
+        level.w,
+        level.h,
+        THREE.RGBAFormat,
+        THREE.HalfFloatType
+      );
+      texture.magFilter = THREE.LinearFilter;
+      texture.minFilter = THREE.LinearFilter;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.generateMipmaps = false;
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    function paint(target, level) {
+      target.width = level.w;
+      target.height = level.h;
+      const context = target.getContext("2d");
+      const image = context.createImageData(level.w, level.h);
+      for (let i = 0; i < level.w * level.h; i++) {
+        for (let c = 0; c < 3; c++) {
+          const value = level.data[i * 3 + c];
+          const mapped = value / (value + 1);
+          image.data[i * 4 + c] = Math.round(255 * Math.pow(mapped, 1 / 2.2));
+        }
+        image.data[i * 4 + 3] = 255;
+      }
+      context.putImageData(image, 0, 0);
+    }
+
+    const base = buildBase(256, 128);
+    const source = downsample(base, 64, 32);
+    const ROUGHNESS_LEVELS = [0, 0.25, 0.5, 0.75, 1];
+    const levels = [
+      base,
+      prefilter(source, 0.25, 64, 32, 160),
+      prefilter(source, 0.5, 32, 16, 256),
+      prefilter(source, 0.75, 16, 8, 256),
+      prefilter(source, 1.0, 8, 4, 256),
+    ];
+    const irradianceLevel = irradiance(source, 32, 16, 256);
+
+    paint(document.getElementById("irrMap"), irradianceLevel);
+    const strip = document.getElementById("mipStrip");
+    const stripCanvases = levels.map((level, index) => {
+      const element = document.createElement("canvas");
+      element.title = `roughness = ${ROUGHNESS_LEVELS[index]}`;
+      paint(element, index === 0 ? downsample(level, 64, 32) : level);
+      strip.appendChild(element);
+      return element;
+    });
+
+    const canvas = document.getElementById("view");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x0d0f14, 1);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+    camera.position.set(0, 0.6, 5.2);
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.minDistance = 2.6;
+    controls.maxDistance = 12;
+
+    const shared = {
+      uPre0: { value: toTexture(levels[0]) },
+      uPre1: { value: toTexture(levels[1]) },
+      uPre2: { value: toTexture(levels[2]) },
+      uPre3: { value: toTexture(levels[3]) },
+      uPre4: { value: toTexture(levels[4]) },
+    };
+
+    const COMMON = `
+      #define PI 3.14159265359
+      uniform sampler2D uPre0;
+      uniform sampler2D uPre1;
+      uniform sampler2D uPre2;
+      uniform sampler2D uPre3;
+      uniform sampler2D uPre4;
+
+      vec2 dirToUv(vec3 d) {
+        return vec2(atan(d.z, d.x) / (2.0 * PI) + 0.5, acos(clamp(d.y, -1.0, 1.0)) / PI);
+      }
+
+      vec3 fetchLevel(int level, vec2 uv) {
+        if (level <= 0) return texture2D(uPre0, uv).rgb;
+        if (level == 1) return texture2D(uPre1, uv).rgb;
+        if (level == 2) return texture2D(uPre2, uv).rgb;
+        if (level == 3) return texture2D(uPre3, uv).rgb;
+        return texture2D(uPre4, uv).rgb;
+      }
+
+      vec3 prefiltered(vec3 dir, float roughness) {
+        vec2 uv = dirToUv(dir);
+        float t = clamp(roughness, 0.0, 1.0) * 4.0;
+        int i = int(floor(t));
+        return mix(fetchLevel(i, uv), fetchLevel(i + 1, uv), fract(t));
+      }
+
+      vec3 present(vec3 color) {
+        color = color / (color + vec3(1.0));
+        return pow(color, vec3(1.0 / 2.2));
+      }
+    `;
+
+    const VERTEX = `
+      varying vec3 vN;
+      varying vec3 vW;
+      void main() {
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        vW = world.xyz;
+        vN = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * viewMatrix * world;
+      }
+    `;
+
+    const ballUniforms = {
+      ...shared,
+      uIrr: { value: toTexture(irradianceLevel) },
+      uAlbedo: { value: new THREE.Color(0xd8d4cc) },
+      uRough: { value: 0.2 },
+      uMetal: { value: 1 },
+      uEnv: { value: 1 },
+      uMode: { value: 0 },
+    };
+
+    const ballMaterial = new THREE.ShaderMaterial({
+      uniforms: ballUniforms,
+      vertexShader: VERTEX,
+      fragmentShader: `
+        precision highp float;
+        ${COMMON}
+        uniform sampler2D uIrr;
+        uniform vec3 uAlbedo;
+        uniform float uRough;
+        uniform float uMetal;
+        uniform float uEnv;
+        uniform int uMode;
+        varying vec3 vN;
+        varying vec3 vW;
+
+        // Karis 的解析近似，替代 BRDF 积分贴图
+        vec2 envBRDFApprox(float NoV, float roughness) {
+          const vec4 c0 = vec4(-1.0, -0.0275, -0.572, 0.022);
+          const vec4 c1 = vec4(1.0, 0.0425, 1.04, -0.04);
+          vec4 r = roughness * c0 + c1;
+          float a004 = min(r.x * r.x, exp2(-9.28 * NoV)) * r.x + r.y;
+          return vec2(-1.04, 1.04) * a004 + r.zw;
+        }
+
+        void main() {
+          vec3 N = normalize(vN);
+          vec3 V = normalize(cameraPosition - vW);
+          vec3 R = reflect(-V, N);
+          float NoV = max(dot(N, V), 1e-4);
+
+          vec3 f0 = mix(vec3(0.04), uAlbedo, uMetal);
+          vec3 F = f0 + (max(vec3(1.0 - uRough), f0) - f0) * pow(1.0 - NoV, 5.0);
+          vec3 kd = (1.0 - F) * (1.0 - uMetal);
+
+          vec3 diffuse = kd * uAlbedo * texture2D(uIrr, dirToUv(N)).rgb;
+          vec2 ab = envBRDFApprox(NoV, uRough);
+          vec3 spec = prefiltered(R, uRough) * (f0 * ab.x + ab.y);
+
+          vec3 color = diffuse + spec;
+          if (uMode == 1) color = diffuse;
+          if (uMode == 2) color = spec;
+          gl_FragColor = vec4(present(color * uEnv), 1.0);
+        }
+      `,
+    });
+
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(1.4, 96, 64), ballMaterial);
+    scene.add(ball);
+
+    const skyUniforms = { ...shared, uLevel: { value: 0.2 } };
+    const sky = new THREE.Mesh(
+      new THREE.SphereGeometry(80, 48, 32),
+      new THREE.ShaderMaterial({
+        uniforms: skyUniforms,
+        side: THREE.BackSide,
+        depthWrite: false,
+        vertexShader: VERTEX,
+        fragmentShader: `
+          precision highp float;
+          ${COMMON}
+          uniform float uLevel;
+          varying vec3 vN;
+          varying vec3 vW;
+          void main() {
+            vec3 dir = normalize(vW - cameraPosition);
+            gl_FragColor = vec4(present(prefiltered(dir, uLevel)), 1.0);
+          }
+        `,
+      })
+    );
+    scene.add(sky);
+
+    let followRoughness = true;
+
+    function updateStrip() {
+      const active = Math.round(ballUniforms.uRough.value * 4);
+      stripCanvases.forEach((element, index) => {
+        element.classList.toggle("active", index === active);
+      });
+      skyUniforms.uLevel.value = followRoughness ? ballUniforms.uRough.value : 0;
+    }
+
+    const LEGEND = {
+      0: "合成 = 漫反射辐照度项 + 预滤波环境 × (F0·A + B)",
+      1: "只看漫反射：k_d·c·(E/π)，金属度调到 0 才看得见",
+      2: "只看镜面：粗糙度就是在 mip 链上滑动，同时改变 A、B 两个系数",
+    };
+    const legendText = document.getElementById("legendText");
+
+    for (const button of document.querySelectorAll("[data-mode]")) {
+      button.addEventListener("click", () => {
+        for (const other of document.querySelectorAll("[data-mode]")) {
+          other.classList.toggle("active", other === button);
+        }
+        ballUniforms.uMode.value = Number(button.dataset.mode);
+        legendText.textContent = LEGEND[button.dataset.mode];
+      });
+    }
+
+    const BASES = { white: 0xd8d4cc, gold: 0xffc65c, copper: 0xd88a63 };
+    for (const button of document.querySelectorAll("[data-base]")) {
+      button.addEventListener("click", () => {
+        for (const other of document.querySelectorAll("[data-base]")) {
+          other.classList.toggle("active", other === button);
+        }
+        ballUniforms.uAlbedo.value.setHex(BASES[button.dataset.base]);
+      });
+    }
+
+    const bgToggle = document.getElementById("bgToggle");
+    bgToggle.addEventListener("click", () => {
+      followRoughness = !followRoughness;
+      bgToggle.classList.toggle("active", followRoughness);
+      updateStrip();
+    });
+
+    function bindSlider(id, valueId, apply) {
+      const input = document.getElementById(id);
+      const label = document.getElementById(valueId);
+      const update = () => {
+        const value = Number(input.value);
+        label.textContent = value.toFixed(2);
+        apply(value);
+        updateStrip();
+      };
+      input.addEventListener("input", update);
+      update();
+    }
+
+    bindSlider("rough", "roughVal", (v) => (ballUniforms.uRough.value = v));
+    bindSlider("metal", "metalVal", (v) => (ballUniforms.uMetal.value = v));
+    bindSlider("env", "envVal", (v) => (ballUniforms.uEnv.value = v));
+
+    function resize() {
+      const { clientWidth, clientHeight } = canvas;
+      renderer.setSize(clientWidth, clientHeight, false);
+      camera.aspect = clientWidth / Math.max(clientHeight, 1);
+      camera.updateProjectionMatrix();
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+
+    function tick() {
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+  </script>
+</body>
+</html>

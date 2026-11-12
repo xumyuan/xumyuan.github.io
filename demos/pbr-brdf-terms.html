@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cook-Torrance 各项拆解</title>
+  <style>
+    :root {
+      --demo-text: var(--vp-c-text-1, #e5e1d8);
+      --demo-muted: var(--vp-c-text-2, #a8a399);
+      --demo-line: var(--vp-c-divider, #3f3c34);
+      --demo-panel: var(--vp-c-bg-elv, rgba(38, 38, 36, 0.92));
+      --demo-soft: var(--vp-c-brand-soft, #3a2e28);
+      --demo-brand: var(--vp-c-brand-1, #e08d6e);
+      --demo-font: var(--vp-font-family-base, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #0d0f14;
+      color: var(--demo-text);
+      font-family: var(--demo-font);
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #0d0f14;
+    }
+
+    #view {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: calc(100% - 250px);
+    }
+
+    .chip, button {
+      border: 1px solid var(--demo-line);
+      background: var(--demo-panel);
+      color: var(--demo-text);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font: 12px/1.4 var(--demo-font);
+    }
+
+    button { cursor: pointer; }
+    button.active {
+      border-color: var(--demo-brand);
+      color: var(--demo-brand);
+      background: var(--demo-soft);
+    }
+
+    .panel {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 200px;
+      display: grid;
+      gap: 9px;
+      padding: 12px 14px;
+      background: var(--demo-panel);
+      border: 1px solid var(--demo-line);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+
+    .row { display: grid; gap: 4px; }
+    .row > span {
+      display: flex;
+      justify-content: space-between;
+      color: var(--demo-muted);
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--demo-brand);
+    }
+
+    .legend {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      display: grid;
+      gap: 6px;
+      max-width: min(470px, calc(100% - 32px));
+      padding: 12px 14px;
+      background: var(--demo-panel);
+      border: 1px solid var(--demo-line);
+      border-radius: 8px;
+      color: var(--demo-muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <section class="stage">
+    <canvas id="view"></canvas>
+    <div class="hud">
+      <button data-mode="0" class="active">完整</button>
+      <button data-mode="1">D</button>
+      <button data-mode="2">F</button>
+      <button data-mode="3">G</button>
+      <button data-mode="4">镜面 BRDF</button>
+      <button data-mode="5">漫反射</button>
+      <button id="alphaToggle">α = r</button>
+      <button id="vectorToggle" class="active">向量</button>
+    </div>
+    <div class="panel">
+      <div class="row">
+        <span>粗糙度 r<b id="roughVal">0.25</b></span>
+        <input id="rough" type="range" min="0.02" max="1" step="0.01" value="0.25" />
+      </div>
+      <div class="row">
+        <span>金属度<b id="metalVal">0.00</b></span>
+        <input id="metal" type="range" min="0" max="1" step="0.01" value="0" />
+      </div>
+      <div class="row">
+        <span>电介质 F0<b id="f0Val">0.04</b></span>
+        <input id="f0" type="range" min="0.01" max="0.2" step="0.005" value="0.04" />
+      </div>
+      <div class="row">
+        <span>光源方位<b id="azVal">55°</b></span>
+        <input id="az" type="range" min="-180" max="180" step="1" value="55" />
+      </div>
+      <div class="row">
+        <span>光源仰角<b id="elVal">28°</b></span>
+        <input id="el" type="range" min="-60" max="85" step="1" value="28" />
+      </div>
+    </div>
+    <div class="legend">
+      <div id="legendText">完整：k_d·c/π + DFG/4(n·l)(n·v)，再乘 n·l</div>
+      <div>
+        <span class="swatch" style="background:#f4f1ec"></span>n
+        <span class="swatch" style="background:#f0c14b;margin-left:12px"></span>l
+        <span class="swatch" style="background:#6ec6ff;margin-left:12px"></span>v
+        <span class="swatch" style="background:#c084fc;margin-left:12px"></span>h = normalize(l+v)
+      </div>
+      <div>D / F / G 直接输出数值，未做 gamma；D 经 x/(1+x) 压缩后才能看清窄波瓣</div>
+    </div>
+  </section>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+    const THEME_KEYS = [
+      "--vp-c-bg",
+      "--vp-c-bg-alt",
+      "--vp-c-bg-soft",
+      "--vp-c-bg-elv",
+      "--vp-c-text-1",
+      "--vp-c-text-2",
+      "--vp-c-text-3",
+      "--vp-c-divider",
+      "--vp-c-border",
+      "--vp-c-brand-1",
+      "--vp-c-brand-soft",
+      "--vp-font-family-base",
+      "--vp-font-family-mono",
+    ];
+
+    function syncThemeFromParent() {
+      if (window.parent === window) return;
+      try {
+        const root = window.parent.document.documentElement;
+        const styles = window.parent.getComputedStyle(root);
+        for (const key of THEME_KEYS) {
+          const value = styles.getPropertyValue(key);
+          if (value) document.documentElement.style.setProperty(key, value);
+        }
+        document.documentElement.classList.toggle("dark", root.classList.contains("dark"));
+      } catch {
+        // 跨域 iframe 读不到父页，保持 fallback
+      }
+    }
+
+    syncThemeFromParent();
+    if (window.parent !== window) {
+      try {
+        new MutationObserver(syncThemeFromParent).observe(
+          window.parent.document.documentElement,
+          { attributes: true, attributeFilter: ["class"] }
+        );
+      } catch {
+        // ignore
+      }
+    }
+
+    const canvas = document.getElementById("view");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x0d0f14, 1);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    camera.position.set(0.6, 1.0, 5.8);
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.target.set(0, 0, 0);
+    controls.minDistance = 3.4;
+    controls.maxDistance = 14;
+
+    const RADIUS = 1.35;
+
+    const uniforms = {
+      uLightDir: { value: new THREE.Vector3(0.6, 0.5, 0.6).normalize() },
+      uAlbedo: { value: new THREE.Color(0xc96a5a) },
+      uRough: { value: 0.25 },
+      uMetal: { value: 0 },
+      uF0d: { value: 0.04 },
+      uMode: { value: 0 },
+      uAlphaSquared: { value: 0 },
+      uIntensity: { value: 3.0 },
+    };
+
+    const material = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader: `
+        varying vec3 vN;
+        varying vec3 vW;
+        void main() {
+          vec4 world = modelMatrix * vec4(position, 1.0);
+          vW = world.xyz;
+          vN = normalize(mat3(modelMatrix) * normal);
+          gl_Position = projectionMatrix * viewMatrix * world;
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        #define PI 3.14159265359
+
+        uniform vec3 uLightDir;
+        uniform vec3 uAlbedo;
+        uniform float uRough;
+        uniform float uMetal;
+        uniform float uF0d;
+        uniform float uAlphaSquared;
+        uniform float uIntensity;
+        uniform int uMode;
+
+        varying vec3 vN;
+        varying vec3 vW;
+
+        float distributionGGX(float NoH, float a) {
+          float a2 = a * a;
+          float d = NoH * NoH * (a2 - 1.0) + 1.0;
+          return a2 / max(PI * d * d, 1e-7);
+        }
+
+        float geometrySchlickGGX(float NoX, float k) {
+          return NoX / max(NoX * (1.0 - k) + k, 1e-7);
+        }
+
+        vec3 fresnelSchlick(float VoH, vec3 f0) {
+          return f0 + (1.0 - f0) * pow(clamp(1.0 - VoH, 0.0, 1.0), 5.0);
+        }
+
+        void main() {
+          vec3 N = normalize(vN);
+          vec3 V = normalize(cameraPosition - vW);
+          vec3 L = normalize(uLightDir);
+          vec3 H = normalize(V + L);
+
+          float NoV = max(dot(N, V), 1e-4);
+          float NoL = max(dot(N, L), 0.0);
+          float NoH = max(dot(N, H), 0.0);
+          float VoH = max(dot(V, H), 0.0);
+
+          float a = mix(uRough, uRough * uRough, uAlphaSquared);
+          float k = (a + 1.0) * (a + 1.0) / 8.0;
+
+          float D = distributionGGX(NoH, a);
+          float G = geometrySchlickGGX(NoV, k) * geometrySchlickGGX(NoL, k);
+          vec3 f0 = mix(vec3(uF0d), uAlbedo, uMetal);
+          vec3 F = fresnelSchlick(VoH, f0);
+
+          vec3 spec = D * G * F / max(4.0 * NoV * NoL, 1e-4);
+          vec3 kd = (1.0 - F) * (1.0 - uMetal);
+          vec3 diffuse = kd * uAlbedo / PI;
+
+          vec3 color;
+          bool linearOut = false;
+
+          if (uMode == 1) {
+            color = vec3(D / (1.0 + D));
+            linearOut = true;
+          } else if (uMode == 2) {
+            color = F;
+            linearOut = true;
+          } else if (uMode == 3) {
+            color = vec3(G);
+            linearOut = true;
+          } else if (uMode == 4) {
+            vec3 s = spec * NoL;
+            color = s / (1.0 + s);
+            linearOut = true;
+          } else if (uMode == 5) {
+            color = diffuse * NoL * uIntensity;
+          } else {
+            color = (diffuse + spec) * NoL * uIntensity;
+          }
+
+          if (!linearOut) {
+            color = color / (color + vec3(1.0));
+            color = pow(color, vec3(1.0 / 2.2));
+          }
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `,
+    });
+
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(RADIUS, 96, 64), material);
+    scene.add(ball);
+
+    const lightGizmo = new THREE.Mesh(
+      new THREE.SphereGeometry(0.1, 16, 12),
+      new THREE.MeshBasicMaterial({ color: 0xf0c14b })
+    );
+    scene.add(lightGizmo);
+
+    const arrows = {
+      n: new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1.3, 0xf4f1ec, 0.22, 0.12),
+      l: new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1.3, 0xf0c14b, 0.22, 0.12),
+      v: new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1.3, 0x6ec6ff, 0.22, 0.12),
+      h: new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(), 1.3, 0xc084fc, 0.22, 0.12),
+    };
+    const arrowGroup = new THREE.Group();
+    for (const arrow of Object.values(arrows)) arrowGroup.add(arrow);
+    scene.add(arrowGroup);
+
+    const toCamera = new THREE.Vector3();
+    const point = new THREE.Vector3();
+    const normal = new THREE.Vector3();
+    const viewDir = new THREE.Vector3();
+    const halfDir = new THREE.Vector3();
+
+    function updateVectors() {
+      const L = uniforms.uLightDir.value;
+      lightGizmo.position.copy(L).multiplyScalar(2.5);
+
+      camera.getWorldPosition(toCamera).normalize();
+      // 取一个既不正对相机也不正对光源的采样点，四根向量才不会重叠
+      normal.copy(toCamera).multiplyScalar(0.85).addScaledVector(L, 0.15).normalize();
+      point.copy(normal).multiplyScalar(RADIUS);
+      viewDir.copy(camera.position).sub(point).normalize();
+      halfDir.copy(viewDir).add(L).normalize();
+
+      arrows.n.position.copy(point);
+      arrows.n.setDirection(normal);
+      arrows.l.position.copy(point);
+      arrows.l.setDirection(L);
+      arrows.v.position.copy(point);
+      arrows.v.setDirection(viewDir);
+      arrows.h.position.copy(point);
+      arrows.h.setDirection(halfDir);
+    }
+
+    const LEGEND = {
+      0: "完整：k_d·c/π + DFG/4(n·l)(n·v)，再乘 n·l",
+      1: "D(n,h,α)：只有 h 附近的微平面朝向被统计，粗糙度越小波瓣越窄",
+      2: "F(v,h)：掠射角趋近 1，所以边缘一圈总是亮的",
+      3: "G(n,v,l,k)：粗糙度越大，微平面互相遮挡越多，整体越暗",
+      4: "镜面 BRDF 乘 n·l：F0 = 0.04 时本来就暗，把金属度拉到 1 才明显",
+      5: "漫反射：k_d·c/π·n·l，金属度调到 1 会整体变黑",
+    };
+
+    const legendText = document.getElementById("legendText");
+    for (const button of document.querySelectorAll("[data-mode]")) {
+      button.addEventListener("click", () => {
+        for (const other of document.querySelectorAll("[data-mode]")) {
+          other.classList.toggle("active", other === button);
+        }
+        uniforms.uMode.value = Number(button.dataset.mode);
+        legendText.textContent = LEGEND[button.dataset.mode];
+      });
+    }
+
+    const alphaToggle = document.getElementById("alphaToggle");
+    alphaToggle.addEventListener("click", () => {
+      const on = uniforms.uAlphaSquared.value < 0.5;
+      uniforms.uAlphaSquared.value = on ? 1 : 0;
+      alphaToggle.classList.toggle("active", on);
+      alphaToggle.textContent = on ? "α = r²" : "α = r";
+    });
+
+    const vectorToggle = document.getElementById("vectorToggle");
+    vectorToggle.addEventListener("click", () => {
+      arrowGroup.visible = !arrowGroup.visible;
+      vectorToggle.classList.toggle("active", arrowGroup.visible);
+    });
+
+    function bindSlider(id, valueId, format, apply) {
+      const input = document.getElementById(id);
+      const label = document.getElementById(valueId);
+      const update = () => {
+        const value = Number(input.value);
+        label.textContent = format(value);
+        apply(value);
+      };
+      input.addEventListener("input", update);
+      update();
+    }
+
+    let azimuth = 55;
+    let elevation = 28;
+
+    function updateLight() {
+      const az = (azimuth * Math.PI) / 180;
+      const el = (elevation * Math.PI) / 180;
+      uniforms.uLightDir.value
+        .set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el))
+        .normalize();
+    }
+
+    bindSlider("rough", "roughVal", (v) => v.toFixed(2), (v) => (uniforms.uRough.value = v));
+    bindSlider("metal", "metalVal", (v) => v.toFixed(2), (v) => (uniforms.uMetal.value = v));
+    bindSlider("f0", "f0Val", (v) => v.toFixed(3), (v) => (uniforms.uF0d.value = v));
+    bindSlider("az", "azVal", (v) => `${v.toFixed(0)}°`, (v) => { azimuth = v; updateLight(); });
+    bindSlider("el", "elVal", (v) => `${v.toFixed(0)}°`, (v) => { elevation = v; updateLight(); });
+
+    const fitDir = new THREE.Vector3();
+    const hudElement = document.querySelector(".hud");
+    const panelElement = document.querySelector(".panel");
+    const legendElement = document.querySelector(".legend");
+
+    function resize() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / Math.max(h, 1);
+
+      // 覆盖层让出来的区域
+      const safe = {
+        top: hudElement.offsetHeight + 26,
+        bottom: legendElement.offsetHeight + 26,
+        left: 12,
+        right: panelElement.offsetWidth + 32,
+      };
+      const availW = Math.max(w - safe.left - safe.right, 140);
+      const availH = Math.max(h - safe.top - safe.bottom, 140);
+
+      const content = RADIUS * 2.9;
+      const halfTan = Math.tan((camera.fov * Math.PI) / 360);
+      const distance = Math.min(
+        Math.max(
+          ((content * h) / availH) / (2 * halfTan),
+          ((content * w) / availW) / (2 * halfTan * Math.max(camera.aspect, 0.2))
+        ),
+        controls.maxDistance
+      );
+
+      fitDir.copy(camera.position).sub(controls.target);
+      if (fitDir.lengthSq() < 1e-6) fitDir.set(0, 0, 1);
+      camera.position.copy(controls.target).addScaledVector(fitDir.normalize(), distance);
+
+      // 用离轴投影把球挪到安全区中心，这样旋转中心仍然是球心
+      const cx = safe.left + availW / 2;
+      const cy = safe.top + availH / 2;
+      camera.setViewOffset(w, h, -(cx - w / 2), -(cy - h / 2), w, h);
+      camera.updateProjectionMatrix();
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+
+    function tick() {
+      controls.update();
+      updateVectors();
+      renderer.render(scene, camera);
+      requestAnimationFrame(tick);
+    }
+    tick();
+  </script>
+</body>
+</html>
